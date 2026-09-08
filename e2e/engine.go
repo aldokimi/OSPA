@@ -97,6 +97,16 @@ func skipOrFail(t *testing.T, service string, err error) {
 	t.Fatalf("Failed to get %s client: %v", service, err)
 }
 
+// GetImageClient returns a gophercloud client for the Glance service.
+func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetGlanceClient()
+	if err != nil {
+		t.Fatalf("Failed to get glance client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()
