@@ -100,3 +100,14 @@ func (s *Session) GetNovaClient() (*gophercloud.ServiceClient, error) {
 	}
 	return client, nil
 }
+
+// GetKeystoneClient returns a client for Keystone (Identity)
+func (s *Session) GetKeystoneClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("identity", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create keystone client: %w", err)
+	}
+	return client, nil
+}

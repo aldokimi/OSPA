@@ -47,18 +47,13 @@ resources:
   user:
     description: Users
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names, password_expired, inactive_days, has_admin_role, mfa_enabled]
+    checks: [status, age_gt, unused, exempt_names, password_expired, has_admin_role, mfa_enabled]
     rich_checks:
       - name: password_expired
         type: bool
         description: "User password has expired"
         category: security
         severity: high
-      - name: inactive_days
-        type: int
-        description: "User has not logged in for N days"
-        category: security
-        severity: medium
       - name: has_admin_role
         type: bool
         description: "User has admin role assigned"
