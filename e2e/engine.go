@@ -97,6 +97,16 @@ func skipOrFail(t *testing.T, service string, err error) {
 	t.Fatalf("Failed to get %s client: %v", service, err)
 }
 
+// GetDesignateClient returns a gophercloud client for the Designate service.
+func (e *TestEngine) GetDesignateClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetDesignateClient()
+	if err != nil {
+		t.Fatalf("Failed to get designate client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()
