@@ -94,15 +94,15 @@ type CheckConditions struct {
 
 	// --- Neutron checks ---
 
-	Direction      string `yaml:"direction,omitempty"`
-	Ethertype      string `yaml:"ethertype,omitempty"`
-	Protocol       string `yaml:"protocol,omitempty"`
-	Port           int    `yaml:"port,omitempty"`
-	RemoteIPPrefix string `yaml:"remote_ip_prefix,omitempty"`
-	PortRangeWide  bool   `yaml:"port_range_wide,omitempty"`
-	Unassociated   bool   `yaml:"unassociated,omitempty"`
-	SharedNetwork  bool   `yaml:"shared_network,omitempty"`
-	NoSecurityGroup bool  `yaml:"no_security_group,omitempty"`
+	Direction       string `yaml:"direction,omitempty"`
+	Ethertype       string `yaml:"ethertype,omitempty"`
+	Protocol        string `yaml:"protocol,omitempty"`
+	Port            int    `yaml:"port,omitempty"`
+	RemoteIPPrefix  string `yaml:"remote_ip_prefix,omitempty"`
+	PortRangeWide   bool   `yaml:"port_range_wide,omitempty"`
+	Unassociated    bool   `yaml:"unassociated,omitempty"`
+	SharedNetwork   bool   `yaml:"shared_network,omitempty"`
+	NoSecurityGroup bool   `yaml:"no_security_group,omitempty"`
 
 	// --- Nova checks ---
 
@@ -126,6 +126,10 @@ type CheckConditions struct {
 	InactiveDays    int    `yaml:"inactive_days,omitempty"`
 	HasAdminRole    bool   `yaml:"has_admin_role,omitempty"`
 	TokenProvider   string `yaml:"token_provider,omitempty"`
+
+	// --- Swift checks ---
+
+	QuotaSet *bool `yaml:"quota_set,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -210,6 +214,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.TokenProvider != "" {
 		used = append(used, "token_provider")
+	}
+	if c.QuotaSet != nil {
+		used = append(used, "quota_set")
 	}
 	return used
 }
