@@ -80,6 +80,34 @@ func CreateSnapshot(t *testing.T, client *gophercloud.ServiceClient) (resourceID
 // CLEANUP HELPER
 // =============================================================================
 
+
+
+// CreateBackup creates a test backup and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateBackup(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateBackup not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
+// CreateQos creates a test qos and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateQos(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateQos not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
 // CleanupOrphans deletes any leaked test resources (those with testPrefix).
 // Run this manually if tests fail and leave resources behind:
 //   go test -tags=e2e ./e2e/cinder/... -run TestCleanupOrphans

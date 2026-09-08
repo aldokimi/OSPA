@@ -94,20 +94,21 @@ type CheckConditions struct {
 
 	// --- Neutron checks ---
 
-	Direction      string `yaml:"direction,omitempty"`
-	Ethertype      string `yaml:"ethertype,omitempty"`
-	Protocol       string `yaml:"protocol,omitempty"`
-	Port           int    `yaml:"port,omitempty"`
-	RemoteIPPrefix string `yaml:"remote_ip_prefix,omitempty"`
-	PortRangeWide  bool   `yaml:"port_range_wide,omitempty"`
-	Unassociated   bool   `yaml:"unassociated,omitempty"`
-	SharedNetwork  bool   `yaml:"shared_network,omitempty"`
-	NoSecurityGroup bool  `yaml:"no_security_group,omitempty"`
+	Direction       string `yaml:"direction,omitempty"`
+	Ethertype       string `yaml:"ethertype,omitempty"`
+	Protocol        string `yaml:"protocol,omitempty"`
+	Port            int    `yaml:"port,omitempty"`
+	RemoteIPPrefix  string `yaml:"remote_ip_prefix,omitempty"`
+	PortRangeWide   bool   `yaml:"port_range_wide,omitempty"`
+	Unassociated    bool   `yaml:"unassociated,omitempty"`
+	SharedNetwork   bool   `yaml:"shared_network,omitempty"`
+	NoSecurityGroup bool   `yaml:"no_security_group,omitempty"`
 
 	// --- Nova checks ---
 
 	ImageName []string `yaml:"image_name,omitempty"`
 	NoKeypair bool     `yaml:"no_keypair,omitempty"`
+	IsPublic  *bool    `yaml:"is_public,omitempty"`
 
 	// --- Cinder checks ---
 
@@ -183,6 +184,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.NoKeypair {
 		used = append(used, "no_keypair")
+	}
+	if c.IsPublic != nil {
+		used = append(used, "is_public")
 	}
 	if c.Encrypted != nil {
 		used = append(used, "encrypted")

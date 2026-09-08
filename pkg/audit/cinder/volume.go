@@ -3,21 +3,31 @@ package cinder
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
+	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit/common"
+	discoveryservices "github.com/OpenStack-Policy-Agent/OSPA/pkg/discovery/services"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
-	// TODO: Import the gophercloud resource type for volume.
-	// Example: "github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 )
+
+type volumeAdapter struct {
+	v discoveryservices.VolumeWithTenant
+}
+
+func (a volumeAdapter) GetID() string           { return a.v.ID }
+func (a volumeAdapter) GetName() string         { return a.v.Name }
+func (a volumeAdapter) GetProjectID() string    { return a.v.TenantID }
+func (a volumeAdapter) GetStatus() string       { return a.v.Status }
+func (a volumeAdapter) GetCreatedAt() time.Time { return a.v.CreatedAt }
+func (a volumeAdapter) GetUpdatedAt() time.Time { return a.v.UpdatedAt }
 
 // VolumeAuditor audits cinder/volume resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: status, age_gt, unused, exempt_names, encrypted, attached, has_backup
 // Allowed actions: log, delete, tag
-//
-// TODO: Cast 'resource' to the correct gophercloud type and implement checks.
-// Gophercloud docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
-// OpenStack API: https://docs.openstack.org/api-ref/cinder
 type VolumeAuditor struct{}
 
 func (a *VolumeAuditor) ResourceType() string {
@@ -25,60 +35,86 @@ func (a *VolumeAuditor) ResourceType() string {
 }
 
 func (a *VolumeAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "encrypted", "attached", "has_backup"}
 }
 
 func (a *VolumeAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
 	_ = ctx
 
-	// TODO: Cast resource to the correct type.
-	// Example: r := resource.(servers.Server)
-	//
-	// Then populate the result:
-	//   result.ResourceID = r.ID
-	//   result.ResourceName = r.Name
-	//   result.ProjectID = r.TenantID
-	//   result.Status = r.Status
-	//   result.UpdatedAt = r.Updated
-	//
-	// Implement checks based on rule.Check fields:
-	//   - Status: compare r.Status with rule.Check.Status
-	//   - AgeGT: compare time.Since(r.Updated) with rule.Check.AgeGT
-	//   - Unused: implement resource-specific unused detection
-	//   - ExemptNames: skip if r.Name matches any exempt pattern
-
-	result := &audit.Result{
-		RuleID:       rule.Name,
-		ResourceID:   "unknown",
-		ResourceName: "unknown",
-		ProjectID:    "",
-		Compliant:    true,
-		Rule:         rule,
-		Status:       "",
+	v, ok := resource.(discoveryservices.VolumeWithTenant)
+	if !ok {
+		return nil, fmt.Errorf("expected discoveryservices.VolumeWithTenant, got %T", resource)
 	}
 
-	_ = resource
+	adapter := volumeAdapter{v: v}
+	result := common.BuildBaseResult(adapter, rule)
+
+	exempt, err := common.RunCommonChecks(adapter, rule, result)
+	if exempt || err != nil {
+		return result, err
+	}
+
+	attached := len(v.Attachments) > 0
+
+	if rule.Check.Unused && attached {
+		result.Compliant = true
+	} else if rule.Check.Unused && !attached {
+		result.Compliant = false
+		result.Observation = "volume is not attached to any instance"
+	}
+
+	if rule.Check.Attached != nil && attached != *rule.Check.Attached {
+		result.Compliant = false
+		result.Observation = "volume is not attached to any instance"
+	}
+
+	if rule.Check.Encrypted != nil && v.Encrypted != *rule.Check.Encrypted {
+		result.Compliant = false
+		result.Observation = "volume is not encrypted"
+	}
+
+	if rule.Check.HasBackup != nil {
+		hasBackup := v.BackupID != nil && *v.BackupID != ""
+		if hasBackup != *rule.Check.HasBackup {
+			result.Compliant = false
+			result.Observation = "volume has no backup"
+		}
+	}
+
 	return result, nil
 }
 
 func (a *VolumeAuditor) Fix(ctx context.Context, client interface{}, resource interface{}, rule *policy.Rule) error {
 	_ = ctx
-	_ = client
-	_ = resource
 
-	// TODO: Implement remediation actions.
-	// Cast client to *gophercloud.ServiceClient.
-	// Allowed actions: log, delete, tag
-	//
-	// Example for delete:
-	//   c := client.(*gophercloud.ServiceClient)
-	//   r := resource.(servers.Server)
-	//   return servers.Delete(c, r.ID).ExtractErr()
+	if rule.Action == "log" {
+		return nil
+	}
+
+	c, ok := client.(*gophercloud.ServiceClient)
+	if !ok {
+		return fmt.Errorf("expected *gophercloud.ServiceClient, got %T", client)
+	}
+
+	v, ok := resource.(discoveryservices.VolumeWithTenant)
+	if !ok {
+		return fmt.Errorf("expected discoveryservices.VolumeWithTenant, got %T", resource)
+	}
 
 	switch rule.Action {
-	case "log":
+	case "delete":
+		if len(v.Attachments) > 0 {
+			return fmt.Errorf("cannot delete volume %s: still attached to an instance", v.ID)
+		}
+		if err := volumes.Delete(c, v.ID, volumes.DeleteOpts{}).ExtractErr(); err != nil {
+			return fmt.Errorf("deleting volume %s: %w", v.ID, err)
+		}
 		return nil
+
+	case "tag":
+		return fmt.Errorf("cinder/volume: tag action not yet implemented")
+
 	default:
-		return fmt.Errorf("%s/%s: action %q not implemented", "cinder", "volume", rule.Action)
+		return fmt.Errorf("cinder/volume: action %q not implemented", rule.Action)
 	}
 }
