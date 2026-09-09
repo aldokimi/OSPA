@@ -45,4 +45,4 @@ resources:
   order:
     description: Orders
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
+    checks: [status, age_gt, exempt_names]
