@@ -94,15 +94,15 @@ type CheckConditions struct {
 
 	// --- Neutron checks ---
 
-	Direction      string `yaml:"direction,omitempty"`
-	Ethertype      string `yaml:"ethertype,omitempty"`
-	Protocol       string `yaml:"protocol,omitempty"`
-	Port           int    `yaml:"port,omitempty"`
-	RemoteIPPrefix string `yaml:"remote_ip_prefix,omitempty"`
-	PortRangeWide  bool   `yaml:"port_range_wide,omitempty"`
-	Unassociated   bool   `yaml:"unassociated,omitempty"`
-	SharedNetwork  bool   `yaml:"shared_network,omitempty"`
-	NoSecurityGroup bool  `yaml:"no_security_group,omitempty"`
+	Direction       string `yaml:"direction,omitempty"`
+	Ethertype       string `yaml:"ethertype,omitempty"`
+	Protocol        string `yaml:"protocol,omitempty"`
+	Port            int    `yaml:"port,omitempty"`
+	RemoteIPPrefix  string `yaml:"remote_ip_prefix,omitempty"`
+	PortRangeWide   bool   `yaml:"port_range_wide,omitempty"`
+	Unassociated    bool   `yaml:"unassociated,omitempty"`
+	SharedNetwork   bool   `yaml:"shared_network,omitempty"`
+	NoSecurityGroup bool   `yaml:"no_security_group,omitempty"`
 
 	// --- Nova checks ---
 
@@ -123,7 +123,6 @@ type CheckConditions struct {
 
 	PasswordExpired bool   `yaml:"password_expired,omitempty"`
 	MFAEnabled      *bool  `yaml:"mfa_enabled,omitempty"`
-	InactiveDays    int    `yaml:"inactive_days,omitempty"`
 	HasAdminRole    bool   `yaml:"has_admin_role,omitempty"`
 	TokenProvider   string `yaml:"token_provider,omitempty"`
 }
@@ -201,9 +200,6 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.MFAEnabled != nil {
 		used = append(used, "mfa_enabled")
-	}
-	if c.InactiveDays != 0 {
-		used = append(used, "inactive_days")
 	}
 	if c.HasAdminRole {
 		used = append(used, "has_admin_role")
