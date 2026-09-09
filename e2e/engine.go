@@ -97,6 +97,16 @@ func skipOrFail(t *testing.T, service string, err error) {
 	t.Fatalf("Failed to get %s client: %v", service, err)
 }
 
+// GetObjectStorageClient returns a gophercloud client for the Swift service.
+func (e *TestEngine) GetObjectStorageClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetSwiftClient()
+	if err != nil {
+		t.Fatalf("Failed to get swift client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()

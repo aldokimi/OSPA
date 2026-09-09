@@ -19,8 +19,6 @@ resources:
     - delete
     - tag
     checks:
-    - status
-    - age_gt
     - unused
     - exempt_names
   object:
@@ -30,18 +28,17 @@ resources:
     - delete
     - tag
     checks:
-    - status
     - age_gt
-    - unused
     - exempt_names
   account:
     description: Accounts
     actions:
     - log
-    - delete
-    - tag
     checks:
-    - status
-    - age_gt
-    - unused
-    - exempt_names
+    - quota_set
+    rich_checks:
+      - name: quota_set
+        type: bool
+        description: "Account has no storage quota configured"
+        category: cost
+        severity: medium
