@@ -95,21 +95,21 @@ func (p *Policy) Validate() error {
 				}
 			}
 
-		if !hasAnyConstraint(&rule.Check) {
-			return fmt.Errorf("rule %q: check must specify at least one condition", ruleName)
-		}
+			if !hasAnyConstraint(&rule.Check) {
+				return fmt.Errorf("rule %q: check must specify at least one condition", ruleName)
+			}
 
-		if err := validateSeverity(rule.Severity, ruleName); err != nil {
-			return err
-		}
-		if err := validateCategory(rule.Category, ruleName); err != nil {
-			return err
-		}
+			if err := validateSeverity(rule.Severity, ruleName); err != nil {
+				return err
+			}
+			if err := validateCategory(rule.Category, ruleName); err != nil {
+				return err
+			}
 
-		// Validate check conditions using service-specific validator
-		if err := validateCheckConditions(service, &rule.Check, resource, ruleName); err != nil {
-			return err
-		}
+			// Validate check conditions using service-specific validator
+			if err := validateCheckConditions(service, &rule.Check, resource, ruleName); err != nil {
+				return err
+			}
 
 			// Validate age_gt format if present
 			if rule.Check.AgeGT != "" {
@@ -199,6 +199,7 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.NoSecurityGroup ||
 		len(check.ImageName) > 0 ||
 		check.NoKeypair ||
+		check.IsPublic != nil ||
 		check.Encrypted != nil ||
 		check.Attached != nil ||
 		check.HasBackup != nil ||

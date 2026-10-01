@@ -34,6 +34,28 @@ This guide explains how to write policies for Nova resources in OSPA.
 **Allowed Checks:** age_gt, unused, exempt_names
 
 
+### Flavor
+
+**Resource Type:** `flavor`
+
+**Allowed Actions:** log, delete, tag
+**Allowed Checks:** exempt_names, is_public
+
+#### Security & Domain Checks
+
+| Check | Severity | Category | Type | Description |
+|-------|----------|----------|------|-------------|
+- **`is_public`** | low | compliance | bool | Flavor is public
+
+
+### Hypervisor
+
+**Resource Type:** `hypervisor`
+
+**Allowed Actions:** log
+**Allowed Checks:** status, exempt_names
+
+
 
 ## OpenStack Security Guide Checklist
 
@@ -320,6 +342,97 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
+### Flavor Examples
+
+#### Security Check Example
+
+```yaml
+- name: security-check-flavor-is_public
+  description: "Flavor is public"
+  resource: flavor
+  severity: low
+  category: compliance
+  check:
+    is_public: true
+  action: log
+```
+
+
+#### Find Inactive Flavor Resources
+
+```yaml
+- name: find-inactive-flavor
+  description: Find inactive flavor resources
+  resource: flavor
+  check:
+    status: inactive
+  action: log
+```
+
+#### Find Old Flavor Resources
+
+```yaml
+- name: find-old-flavor
+  description: Find flavor resources older than 30 days
+  resource: flavor
+  check:
+    age_gt: 30d
+  action: log
+```
+
+#### Cleanup Unused Flavor Resources
+
+```yaml
+- name: cleanup-unused-flavor
+  description: Delete unused flavor resources
+  resource: flavor
+  check:
+    unused: true
+    exempt_names:
+      - default
+  action: delete
+```
+
+
+### Hypervisor Examples
+
+
+#### Find Inactive Hypervisor Resources
+
+```yaml
+- name: find-inactive-hypervisor
+  description: Find inactive hypervisor resources
+  resource: hypervisor
+  check:
+    status: inactive
+  action: log
+```
+
+#### Find Old Hypervisor Resources
+
+```yaml
+- name: find-old-hypervisor
+  description: Find hypervisor resources older than 30 days
+  resource: hypervisor
+  check:
+    age_gt: 30d
+  action: log
+```
+
+#### Cleanup Unused Hypervisor Resources
+
+```yaml
+- name: cleanup-unused-hypervisor
+  description: Delete unused hypervisor resources
+  resource: hypervisor
+  check:
+    unused: true
+    exempt_names:
+      - default
+  action: delete
+```
+
+
 
 ## Complete Policy Example
 
@@ -368,6 +481,42 @@ policies:
         exempt_names:
           - default
       action: log
+    - name: audit-flavor
+      description: Audit flavor resources
+      resource: flavor
+      severity: medium
+      category: hygiene
+      check:
+        status: active
+      action: log
+    - name: cleanup-old-flavor
+      description: Find flavor resources older than 90 days
+      resource: flavor
+      severity: low
+      category: cost
+      check:
+        age_gt: 90d
+        exempt_names:
+          - default
+      action: log
+    - name: audit-hypervisor
+      description: Audit hypervisor resources
+      resource: hypervisor
+      severity: medium
+      category: hygiene
+      check:
+        status: active
+      action: log
+    - name: cleanup-old-hypervisor
+      description: Find hypervisor resources older than 90 days
+      resource: hypervisor
+      severity: low
+      category: cost
+      check:
+        age_gt: 90d
+        exempt_names:
+          - default
+      action: log
 ```
 
 ## OpenStack Documentation References
@@ -408,7 +557,7 @@ For more information about Nova resources and their properties:
 
 **Policy validation fails:**
 - Ensure service name matches exactly: `nova`
-- Verify resource type is supported: `{instance Server instances [status age_gt unused exempt_names image_name no_keypair] [{image_name string_list Instance uses a deprecated or banned image compliance medium } {no_keypair bool Instance has no SSH keypair attached security medium }] [log delete tag] {false false false}}`, `{keypair SSH keypairs [age_gt unused exempt_names] [] [log delete tag] {false false false}}`
+- Verify resource type is supported: `{instance Server instances [status age_gt unused exempt_names image_name no_keypair] [{image_name string_list Instance uses a deprecated or banned image compliance medium } {no_keypair bool Instance has no SSH keypair attached security medium }] [log delete tag] {false false false}}`, `{keypair SSH keypairs [age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{flavor Flavor definitions [exempt_names is_public] [{is_public bool Flavor is public compliance low }] [log delete tag] {false false false}}`, `{hypervisor Hypervisor information [status exempt_names] [] [log] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**
