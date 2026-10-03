@@ -157,6 +157,7 @@ func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	return client
 }
 
+<<<<<<< HEAD
 // GetMagnumClient returns a gophercloud client for the Magnum service.
 func (e *TestEngine) GetMagnumClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
@@ -213,6 +214,14 @@ func (e *TestEngine) GetZaqarClient(t *testing.T) *gophercloud.ServiceClient {
 	client, err := e.Session.GetZaqarClient()
 	if err != nil {
 		t.Fatalf("Failed to get zaqar client: %v", err)
+=======
+// GetOrchestrationClient returns a gophercloud client for the Heat service.
+func (e *TestEngine) GetOrchestrationClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetHeatClient()
+	if err != nil {
+		t.Fatalf("Failed to get heat client: %v", err)
+>>>>>>> origin/coverage/heat-batch7
 	}
 	return client
 }

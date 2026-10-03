@@ -71,10 +71,10 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `stack` | — | — | — |
-| `resource` | — | — | — |
-| `template` | — | — | — |
-| `snapshot` | — | — | — |
+| `stack` | ✔ | status, age_gt, exempt_names | log, delete |
+| `resource` | ✔ | status, age_gt, exempt_names | log |
+| `template` | ✔ | exempt_names | log |
+| `snapshot` | ✔ | age_gt, exempt_names | log |
 
 ### Swift (Object Storage)
 
