@@ -22,7 +22,7 @@ import (
 //     Checks: status, age_gt, unused, exempt_names
 //     Actions: log, delete, tag
 //   - record: DNS records
-//     Checks: status, age_gt, unused, exempt_names
+//     Checks: status, age_gt, exempt_names
 //     Actions: log, delete, tag
 type DesignateService struct{}
 

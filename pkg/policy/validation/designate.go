@@ -31,7 +31,10 @@ func (v *DesignateValidator) ValidateResource(check *policy.CheckConditions, res
 		}
 
 	case "record":
-		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names"}); err != nil {
+		// Records are single values within a recordset (there is no
+		// standalone Designate record API), so an unused check is not
+		// offered (matches RecordAuditor.ImplementedChecks).
+		if err := validateAllowedChecks(check, []string{"status", "age_gt", "exempt_names"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

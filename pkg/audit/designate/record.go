@@ -30,7 +30,10 @@ func (a recordAdapter) GetUpdatedAt() time.Time { return a.r.UpdatedAt }
 // Note: Designate has no standalone "record" API. Each record is one value
 // within its parent recordset's Records list (see discoveryservices.Record).
 // Fix("delete") re-fetches the parent recordset and updates it with the
-// value removed, since there is no per-record delete endpoint.
+// value removed; when the record was the recordset's last value the
+// recordset is deleted instead, since a Designate recordset cannot hold
+// zero records and an empty Update would be a silent no-op (the records
+// field is omitempty in the PATCH body).
 type RecordAuditor struct{}
 
 func (a *RecordAuditor) ResourceType() string {
@@ -89,6 +92,16 @@ func (a *RecordAuditor) Fix(ctx context.Context, client interface{}, resource in
 			if v != r.Value {
 				remaining = append(remaining, v)
 			}
+		}
+
+		if len(remaining) == 0 {
+			// Last value: an Update with an empty Records slice is omitted
+			// from the PATCH body (omitempty) and would be a no-op. Delete
+			// the now-empty recordset instead.
+			if err := recordsets.Delete(c, r.ZoneID, r.RecordSetID).ExtractErr(); err != nil {
+				return fmt.Errorf("deleting recordset %s in zone %s (last record removed): %w", r.RecordSetID, r.ZoneID, err)
+			}
+			return nil
 		}
 
 		opts := recordsets.UpdateOpts{Records: remaining}
