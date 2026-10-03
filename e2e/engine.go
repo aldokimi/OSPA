@@ -107,6 +107,16 @@ func (e *TestEngine) GetIdentityClient(t *testing.T) *gophercloud.ServiceClient 
 	return client
 }
 
+// GetImageClient returns a gophercloud client for the Glance service.
+func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetGlanceClient()
+	if err != nil {
+		t.Fatalf("Failed to get glance client: %v", err)
+	}
+	return client
+}
+
 // GetIronicClient returns a gophercloud client for the Ironic service.
 func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()

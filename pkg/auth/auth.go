@@ -112,6 +112,17 @@ func (s *Session) GetKeystoneClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+// GetGlanceClient returns a client for Glance (Image)
+func (s *Session) GetGlanceClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("image", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create glance client: %w", err)
+	}
+	return client, nil
+}
+
 // GetIronicClient returns a client for Ironic (Bare Metal)
 func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("baremetal", &clientconfig.ClientOpts{

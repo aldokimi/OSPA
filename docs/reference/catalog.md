@@ -53,8 +53,8 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `image` | — | — | — |
-| `member` | — | — | — |
+| `image` | ✔ | status, age_gt, unused, exempt_names, visibility | log, delete, tag |
+| `member` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
 
 ### Keystone (Identity)
 
