@@ -80,9 +80,9 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `container` | — | — | — |
-| `object` | — | — | — |
-| `account` | — | — | — |
+| `container` | ✔ | unused, exempt_names | log, delete, tag |
+| `object` | ✔ | age_gt, exempt_names | log, delete, tag |
+| `account` | ✔ | quota_set | log |
 
 ### Octavia (Load Balancing)
 

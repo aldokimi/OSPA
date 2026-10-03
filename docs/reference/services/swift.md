@@ -15,8 +15,12 @@ This guide explains how to write policies for Swift resources in OSPA.
 
 **Resource Type:** `account`
 
-**Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Actions:** log
+**Allowed Checks:** quota_set
+
+The account is the singleton per-project storage scope: it has no
+status, no timestamps, and no delete API, so only the quota check
+and the log action apply.
 
 
 ### Container
@@ -24,7 +28,10 @@ This guide explains how to write policies for Swift resources in OSPA.
 **Resource Type:** `container`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** unused, exempt_names
+
+Containers carry no status or timestamp fields, so the available
+checks are unused (empty container) and exempt_names.
 
 
 ### Object
@@ -32,7 +39,10 @@ This guide explains how to write policies for Swift resources in OSPA.
 **Resource Type:** `object`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** age_gt, exempt_names
+
+Objects have no status field and no usage data, so only age_gt
+(backed by LastModified) and exempt_names apply.
 
 
 
@@ -218,66 +228,20 @@ action_tag_name: "Display Name for Tag"
 ### Account Examples
 
 
-#### Find Inactive Account Resources
+#### Check Account Quota
 
 ```yaml
-- name: find-inactive-account
-  description: Find inactive account resources
+- name: require-account-quota
+  description: Ensure the account has a storage quota configured
   resource: account
   check:
-    status: inactive
+    quota_set: true
   action: log
-```
-
-#### Find Old Account Resources
-
-```yaml
-- name: find-old-account
-  description: Find account resources older than 30 days
-  resource: account
-  check:
-    age_gt: 30d
-  action: log
-```
-
-#### Cleanup Unused Account Resources
-
-```yaml
-- name: cleanup-unused-account
-  description: Delete unused account resources
-  resource: account
-  check:
-    unused: true
-    exempt_names:
-      - default
-  action: delete
 ```
 
 
 ### Container Examples
 
-
-#### Find Inactive Container Resources
-
-```yaml
-- name: find-inactive-container
-  description: Find inactive container resources
-  resource: container
-  check:
-    status: inactive
-  action: log
-```
-
-#### Find Old Container Resources
-
-```yaml
-- name: find-old-container
-  description: Find container resources older than 30 days
-  resource: container
-  check:
-    age_gt: 30d
-  action: log
-```
 
 #### Cleanup Unused Container Resources
 
@@ -296,17 +260,6 @@ action_tag_name: "Display Name for Tag"
 ### Object Examples
 
 
-#### Find Inactive Object Resources
-
-```yaml
-- name: find-inactive-object
-  description: Find inactive object resources
-  resource: object
-  check:
-    status: inactive
-  action: log
-```
-
 #### Find Old Object Resources
 
 ```yaml
@@ -316,19 +269,6 @@ action_tag_name: "Display Name for Tag"
   check:
     age_gt: 30d
   action: log
-```
-
-#### Cleanup Unused Object Resources
-
-```yaml
-- name: cleanup-unused-object
-  description: Delete unused object resources
-  resource: object
-  check:
-    unused: true
-    exempt_names:
-      - default
-  action: delete
 ```
 
 
@@ -344,49 +284,23 @@ defaults:
   output: findings.json
 policies:
   - swift:
-    - name: audit-account
-      description: Audit account resources
+    - name: check-account-quota
+      description: Ensure the account has a storage quota configured
       resource: account
       severity: medium
-      category: hygiene
+      category: security
       check:
-        status: active
+        quota_set: true
       action: log
-    - name: cleanup-old-account
-      description: Find account resources older than 90 days
-      resource: account
-      severity: low
-      category: cost
-      check:
-        age_gt: 90d
-        exempt_names:
-          - default
-      action: log
-    - name: audit-container
-      description: Audit container resources
+    - name: cleanup-unused-container
+      description: Find empty container resources
       resource: container
       severity: medium
-      category: hygiene
-      check:
-        status: active
-      action: log
-    - name: cleanup-old-container
-      description: Find container resources older than 90 days
-      resource: container
-      severity: low
       category: cost
       check:
-        age_gt: 90d
+        unused: true
         exempt_names:
           - default
-      action: log
-    - name: audit-object
-      description: Audit object resources
-      resource: object
-      severity: medium
-      category: hygiene
-      check:
-        status: active
       action: log
     - name: cleanup-old-object
       description: Find object resources older than 90 days
@@ -438,7 +352,7 @@ For more information about Swift resources and their properties:
 
 **Policy validation fails:**
 - Ensure service name matches exactly: `swift`
-- Verify resource type is supported: `{account Accounts [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{container Containers [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{object Objects [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`
+- Verify resource type is supported: `{account Accounts [quota_set] [] [log] {false false false}}`, `{container Containers [unused exempt_names] [] [log delete tag] {false false false}}`, `{object Objects [age_gt exempt_names] [] [log delete tag] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**
