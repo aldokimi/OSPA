@@ -167,6 +167,7 @@ func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+
 // GetManilaClient returns a client for Manila (Shared File Systems).
 func (s *Session) GetManilaClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("shared-file-systems", &clientconfig.ClientOpts{
@@ -229,6 +230,17 @@ func (s *Session) GetMagnumClient() (*gophercloud.ServiceClient, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create magnum client: %w", err)
+	}
+	return client, nil
+}
+
+// GetHeatClient returns a client for Heat.
+func (s *Session) GetHeatClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("orchestration", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create heat client: %w", err)
 	}
 	return client, nil
 }
