@@ -137,6 +137,16 @@ func (e *TestEngine) GetBarbicanClient(t *testing.T) *gophercloud.ServiceClient 
 	return client
 }
 
+// GetObjectStorageClient returns a gophercloud client for the Swift service.
+func (e *TestEngine) GetObjectStorageClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetSwiftClient()
+	if err != nil {
+		t.Fatalf("Failed to get swift client: %v", err)
+	}
+	return client
+}
+
 // GetIronicClient returns a gophercloud client for the Ironic service.
 func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()

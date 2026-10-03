@@ -207,7 +207,8 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.PasswordExpired ||
 		check.MFAEnabled != nil ||
 		check.HasAdminRole ||
-		check.TokenProvider != ""
+		check.TokenProvider != "" ||
+		check.QuotaSet != nil
 }
 
 func hasCompositeCheck(check map[string]interface{}) bool {

@@ -126,6 +126,10 @@ type CheckConditions struct {
 	MFAEnabled      *bool  `yaml:"mfa_enabled,omitempty"`
 	HasAdminRole    bool   `yaml:"has_admin_role,omitempty"`
 	TokenProvider   string `yaml:"token_provider,omitempty"`
+
+	// --- Swift checks ---
+
+	QuotaSet *bool `yaml:"quota_set,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -210,6 +214,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.TokenProvider != "" {
 		used = append(used, "token_provider")
+	}
+	if c.QuotaSet != nil {
+		used = append(used, "quota_set")
 	}
 	return used
 }
