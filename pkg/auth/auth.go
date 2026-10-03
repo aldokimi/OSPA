@@ -134,6 +134,17 @@ func (s *Session) GetDesignateClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+// GetBarbicanClient returns a client for Barbican (Key Manager)
+func (s *Session) GetBarbicanClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("key-manager", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create barbican client: %w", err)
+	}
+	return client, nil
+}
+
 // GetIronicClient returns a client for Ironic (Bare Metal)
 func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("baremetal", &clientconfig.ClientOpts{

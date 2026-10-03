@@ -98,9 +98,9 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `secret` | — | — | — |
-| `container` | — | — | — |
-| `order` | — | — | — |
+| `secret` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `container` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `order` | ✔ | status, age_gt, exempt_names | log, delete, tag |
 
 ### Manila (Shared File Systems)
 

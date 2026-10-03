@@ -127,6 +127,16 @@ func (e *TestEngine) GetDesignateClient(t *testing.T) *gophercloud.ServiceClient
 	return client
 }
 
+// GetBarbicanClient returns a gophercloud client for the Barbican service.
+func (e *TestEngine) GetBarbicanClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetBarbicanClient()
+	if err != nil {
+		t.Fatalf("Failed to get barbican client: %v", err)
+	}
+	return client
+}
+
 // GetIronicClient returns a gophercloud client for the Ironic service.
 func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
