@@ -157,6 +157,16 @@ func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	return client
 }
 
+// GetOrchestrationClient returns a gophercloud client for the Heat service.
+func (e *TestEngine) GetOrchestrationClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetHeatClient()
+	if err != nil {
+		t.Fatalf("Failed to get heat client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()

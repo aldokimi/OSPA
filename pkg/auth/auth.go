@@ -166,3 +166,14 @@ func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	}
 	return client, nil
 }
+
+// GetHeatClient returns a client for Heat.
+func (s *Session) GetHeatClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("orchestration", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create heat client: %w", err)
+	}
+	return client, nil
+}
