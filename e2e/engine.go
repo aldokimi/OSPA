@@ -117,6 +117,16 @@ func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
 	return client
 }
 
+// GetDesignateClient returns a gophercloud client for the Designate service.
+func (e *TestEngine) GetDesignateClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetDesignateClient()
+	if err != nil {
+		t.Fatalf("Failed to get designate client: %v", err)
+	}
+	return client
+}
+
 // GetIronicClient returns a gophercloud client for the Ironic service.
 func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()

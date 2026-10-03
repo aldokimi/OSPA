@@ -123,6 +123,17 @@ func (s *Session) GetGlanceClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+// GetDesignateClient returns a client for Designate (DNS)
+func (s *Session) GetDesignateClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("dns", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create designate client: %w", err)
+	}
+	return client, nil
+}
+
 // GetIronicClient returns a client for Ironic (Bare Metal)
 func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("baremetal", &clientconfig.ClientOpts{
