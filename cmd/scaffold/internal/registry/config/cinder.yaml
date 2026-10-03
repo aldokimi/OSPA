@@ -77,10 +77,14 @@ resources:
   snapshot:
     description: Volume snapshots
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names, encrypted]
-    rich_checks:
-      - name: encrypted
-        type: bool
-        description: "Snapshot is not encrypted"
-        category: security
-        severity: high
+    checks: [status, age_gt, unused, exempt_names]
+
+  backup:
+    description: Volume backups
+    actions: [log, delete, tag]
+    checks: [status, age_gt, exempt_names]
+
+  qos:
+    description: Quality of service specifications
+    actions: [log, delete, tag]
+    checks: [exempt_names]

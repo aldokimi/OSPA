@@ -3,21 +3,28 @@ package nova
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
+	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit/common"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
-	// TODO: Import the gophercloud resource type for instance.
-	// Example: "github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 )
+
+type instanceAdapter struct{ s servers.Server }
+
+func (a instanceAdapter) GetID() string           { return a.s.ID }
+func (a instanceAdapter) GetName() string         { return a.s.Name }
+func (a instanceAdapter) GetProjectID() string    { return a.s.TenantID }
+func (a instanceAdapter) GetStatus() string       { return a.s.Status }
+func (a instanceAdapter) GetCreatedAt() time.Time { return a.s.Created }
+func (a instanceAdapter) GetUpdatedAt() time.Time { return a.s.Updated }
 
 // InstanceAuditor audits nova/instance resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: status, age_gt, unused, exempt_names, image_name, no_keypair
 // Allowed actions: log, delete, tag
-//
-// TODO: Cast 'resource' to the correct gophercloud type and implement checks.
-// Gophercloud docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
-// OpenStack API: https://docs.openstack.org/api-ref/nova
 type InstanceAuditor struct{}
 
 func (a *InstanceAuditor) ResourceType() string {
@@ -25,60 +32,77 @@ func (a *InstanceAuditor) ResourceType() string {
 }
 
 func (a *InstanceAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "image_name", "no_keypair"}
 }
 
 func (a *InstanceAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
 	_ = ctx
 
-	// TODO: Cast resource to the correct type.
-	// Example: r := resource.(servers.Server)
-	//
-	// Then populate the result:
-	//   result.ResourceID = r.ID
-	//   result.ResourceName = r.Name
-	//   result.ProjectID = r.TenantID
-	//   result.Status = r.Status
-	//   result.UpdatedAt = r.Updated
-	//
-	// Implement checks based on rule.Check fields:
-	//   - Status: compare r.Status with rule.Check.Status
-	//   - AgeGT: compare time.Since(r.Updated) with rule.Check.AgeGT
-	//   - Unused: implement resource-specific unused detection
-	//   - ExemptNames: skip if r.Name matches any exempt pattern
-
-	result := &audit.Result{
-		RuleID:       rule.Name,
-		ResourceID:   "unknown",
-		ResourceName: "unknown",
-		ProjectID:    "",
-		Compliant:    true,
-		Rule:         rule,
-		Status:       "",
+	s, ok := resource.(servers.Server)
+	if !ok {
+		return nil, fmt.Errorf("expected servers.Server, got %T", resource)
 	}
 
-	_ = resource
+	adapter := instanceAdapter{s: s}
+	result := common.BuildBaseResult(adapter, rule)
+
+	exempt, err := common.RunCommonChecks(adapter, rule, result)
+	if exempt || err != nil {
+		return result, err
+	}
+
+	if rule.Check.Unused && s.Status == "SHUTOFF" {
+		result.Compliant = false
+		result.Observation = "instance is stopped but still allocated (SHUTOFF)"
+	}
+
+	if len(rule.Check.ImageName) > 0 {
+		imageID, _ := s.Image["id"].(string)
+		for _, banned := range rule.Check.ImageName {
+			if imageID == banned {
+				result.Compliant = false
+				result.Observation = fmt.Sprintf("instance uses a deprecated or banned image (%s)", imageID)
+				break
+			}
+		}
+	}
+
+	if rule.Check.NoKeypair && s.KeyName == "" {
+		result.Compliant = false
+		result.Observation = "instance has no SSH keypair attached"
+	}
+
 	return result, nil
 }
 
 func (a *InstanceAuditor) Fix(ctx context.Context, client interface{}, resource interface{}, rule *policy.Rule) error {
 	_ = ctx
-	_ = client
-	_ = resource
 
-	// TODO: Implement remediation actions.
-	// Cast client to *gophercloud.ServiceClient.
-	// Allowed actions: log, delete, tag
-	//
-	// Example for delete:
-	//   c := client.(*gophercloud.ServiceClient)
-	//   r := resource.(servers.Server)
-	//   return servers.Delete(c, r.ID).ExtractErr()
+	if rule.Action == "log" {
+		return nil
+	}
+
+	c, ok := client.(*gophercloud.ServiceClient)
+	if !ok {
+		return fmt.Errorf("expected *gophercloud.ServiceClient, got %T", client)
+	}
+
+	s, ok := resource.(servers.Server)
+	if !ok {
+		return fmt.Errorf("expected servers.Server, got %T", resource)
+	}
 
 	switch rule.Action {
-	case "log":
+	case "delete":
+		if err := servers.Delete(c, s.ID).ExtractErr(); err != nil {
+			return fmt.Errorf("deleting instance %s: %w", s.ID, err)
+		}
 		return nil
+
+	case "tag":
+		return fmt.Errorf("nova/instance: tag action not yet implemented")
+
 	default:
-		return fmt.Errorf("%s/%s: action %q not implemented", "nova", "instance", rule.Action)
+		return fmt.Errorf("nova/instance: action %q not implemented", rule.Action)
 	}
 }

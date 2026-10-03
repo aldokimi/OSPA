@@ -21,12 +21,20 @@ import (
 //   - keypair: SSH keypairs
 //     Checks: status, age_gt, unused, exempt_names
 //     Actions: log, delete, tag
+//   - flavor: Flavor definitions
+//     Checks: exempt_names, is_public
+//     Actions: log, delete, tag
+//   - hypervisor: Hypervisor information (read-only; no delete/tag API)
+//     Checks: status, exempt_names
+//     Actions: log
 type NovaService struct{}
 
 func init() {
 	rootservices.MustRegister(&NovaService{})
 	rootservices.RegisterResource("nova", "instance")
 	rootservices.RegisterResource("nova", "keypair")
+	rootservices.RegisterResource("nova", "flavor")
+	rootservices.RegisterResource("nova", "hypervisor")
 }
 
 func (s *NovaService) Name() string {
@@ -43,6 +51,10 @@ func (s *NovaService) GetResourceAuditor(resourceType string) (audit.Auditor, er
 		return &nova.InstanceAuditor{}, nil
 	case "keypair":
 		return &nova.KeypairAuditor{}, nil
+	case "flavor":
+		return &nova.FlavorAuditor{}, nil
+	case "hypervisor":
+		return &nova.HypervisorAuditor{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}
@@ -54,6 +66,10 @@ func (s *NovaService) GetResourceDiscoverer(resourceType string) (discovery.Disc
 		return &discovery_services.NovaInstanceDiscoverer{}, nil
 	case "keypair":
 		return &discovery_services.NovaKeypairDiscoverer{}, nil
+	case "flavor":
+		return &discovery_services.NovaFlavorDiscoverer{}, nil
+	case "hypervisor":
+		return &discovery_services.NovaHypervisorDiscoverer{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}

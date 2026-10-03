@@ -57,17 +57,18 @@ resources:
     actions: [log, delete, tag]
     checks: [age_gt, unused, exempt_names]
 
-  server:
-    description: Server instances (alias for instance)
-    actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
-
   flavor:
     description: Flavor definitions
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
+    checks: [exempt_names, is_public]
+    rich_checks:
+      - name: is_public
+        type: bool
+        description: "Flavor is public"
+        category: compliance
+        severity: low
 
   hypervisor:
     description: Hypervisor information
-    actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
+    actions: [log]
+    checks: [status, exempt_names]
