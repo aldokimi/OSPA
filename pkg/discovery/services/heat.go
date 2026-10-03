@@ -218,6 +218,7 @@ func (d *HeatSnapshotDiscoverer) Discover(ctx context.Context, client *gopherclo
 			if err != nil {
 				continue
 			}
+			defer resp.Body.Close()
 
 			var parsed struct {
 				Snapshots []struct {
@@ -227,10 +228,8 @@ func (d *HeatSnapshotDiscoverer) Discover(ctx context.Context, client *gopherclo
 			}
 			dec := json.NewDecoder(resp.Body)
 			if err := dec.Decode(&parsed); err != nil {
-				resp.Body.Close()
 				continue
 			}
-			resp.Body.Close()
 
 			for _, snap := range parsed.Snapshots {
 				snapshot := HeatSnapshot{StackName: s.Name, Description: snap.Description}
