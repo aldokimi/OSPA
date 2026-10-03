@@ -157,6 +157,66 @@ func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	return client
 }
 
+// GetMagnumClient returns a gophercloud client for the Magnum service.
+func (e *TestEngine) GetMagnumClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetMagnumClient()
+	if err != nil {
+		t.Fatalf("Failed to get magnum client: %v", err)
+	}
+	return client
+}
+
+// GetManilaClient returns a gophercloud client for the Manila service.
+func (e *TestEngine) GetManilaClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetManilaClient()
+	if err != nil {
+		t.Fatalf("Failed to get manila client: %v", err)
+	}
+	return client
+}
+
+// GetOctaviaClient returns a gophercloud client for the Octavia service.
+func (e *TestEngine) GetOctaviaClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetOctaviaClient()
+	if err != nil {
+		t.Fatalf("Failed to get octavia client: %v", err)
+	}
+	return client
+}
+
+// GetSenlinClient returns a gophercloud client for the Senlin service.
+func (e *TestEngine) GetSenlinClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetSenlinClient()
+	if err != nil {
+		t.Fatalf("Failed to get senlin client: %v", err)
+	}
+	return client
+}
+
+// GetTroveClient returns a gophercloud client for the Trove service.
+func (e *TestEngine) GetTroveClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetTroveClient()
+	if err != nil {
+		t.Fatalf("Failed to get trove client: %v", err)
+	}
+	return client
+}
+
+// GetZaqarClient returns a gophercloud client for the Zaqar service.
+func (e *TestEngine) GetZaqarClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetZaqarClient()
+	if err != nil {
+		t.Fatalf("Failed to get zaqar client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()
