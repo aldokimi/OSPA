@@ -206,7 +206,6 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.Visibility != "" ||
 		check.PasswordExpired ||
 		check.MFAEnabled != nil ||
-		check.InactiveDays != 0 ||
 		check.HasAdminRole ||
 		check.TokenProvider != ""
 }
