@@ -16,14 +16,13 @@ This guide explains how to write policies for Keystone resources in OSPA.
 **Resource Type:** `user`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names, password_expired, inactive_days, has_admin_role, mfa_enabled
+**Allowed Checks:** status, age_gt, unused, exempt_names, password_expired, has_admin_role, mfa_enabled
 
 #### Security & Domain Checks
 
 | Check | Severity | Category | Type | Description |
 |-------|----------|----------|------|-------------|
 - **`password_expired`** | high | security | bool | User password has expired
-- **`inactive_days`** | medium | security | int | User has not logged in for N days
 - **`has_admin_role`** | high | security | bool | User has admin role assigned
 - **`mfa_enabled`** | high | security | bool | User does not have MFA enabled
 
@@ -33,7 +32,7 @@ This guide explains how to write policies for Keystone resources in OSPA.
 **Resource Type:** `role`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** age_gt, unused, exempt_names
 
 
 ### Project
@@ -57,7 +56,7 @@ This guide explains how to write policies for Keystone resources in OSPA.
 **Resource Type:** `group`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** age_gt, unused, exempt_names
 
 
 ### Service
@@ -281,14 +280,14 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
-#### Find Inactive User Resources
+#### Find Disabled User Resources
 
 ```yaml
-- name: find-inactive-user
-  description: Find inactive user resources
+- name: find-disabled-user
+  description: Find disabled user resources
   resource: user
   check:
-    status: inactive
+    status: disabled
   action: log
 ```
 
@@ -320,17 +319,6 @@ action_tag_name: "Display Name for Tag"
 ### Role Examples
 
 
-#### Find Inactive Role Resources
-
-```yaml
-- name: find-inactive-role
-  description: Find inactive role resources
-  resource: role
-  check:
-    status: inactive
-  action: log
-```
-
 #### Find Old Role Resources
 
 ```yaml
@@ -359,14 +347,14 @@ action_tag_name: "Display Name for Tag"
 ### Project Examples
 
 
-#### Find Inactive Project Resources
+#### Find Disabled Project Resources
 
 ```yaml
-- name: find-inactive-project
-  description: Find inactive project resources
+- name: find-disabled-project
+  description: Find disabled project resources
   resource: project
   check:
-    status: inactive
+    status: disabled
   action: log
 ```
 
@@ -398,14 +386,14 @@ action_tag_name: "Display Name for Tag"
 ### Domain Examples
 
 
-#### Find Inactive Domain Resources
+#### Find Disabled Domain Resources
 
 ```yaml
-- name: find-inactive-domain
-  description: Find inactive domain resources
+- name: find-disabled-domain
+  description: Find disabled domain resources
   resource: domain
   check:
-    status: inactive
+    status: disabled
   action: log
 ```
 
@@ -437,17 +425,6 @@ action_tag_name: "Display Name for Tag"
 ### Group Examples
 
 
-#### Find Inactive Group Resources
-
-```yaml
-- name: find-inactive-group
-  description: Find inactive group resources
-  resource: group
-  check:
-    status: inactive
-  action: log
-```
-
 #### Find Old Group Resources
 
 ```yaml
@@ -476,14 +453,14 @@ action_tag_name: "Display Name for Tag"
 ### Service Examples
 
 
-#### Find Inactive Service Resources
+#### Find Disabled Service Resources
 
 ```yaml
-- name: find-inactive-service
-  description: Find inactive service resources
+- name: find-disabled-service
+  description: Find disabled service resources
   resource: service
   check:
-    status: inactive
+    status: disabled
   action: log
 ```
 
@@ -530,7 +507,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: enabled
       action: log
     - name: cleanup-old-user
       description: Find user resources older than 90 days
@@ -548,7 +525,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        unused: true
       action: log
     - name: cleanup-old-role
       description: Find role resources older than 90 days
@@ -566,7 +543,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: enabled
       action: log
     - name: cleanup-old-project
       description: Find project resources older than 90 days
@@ -584,7 +561,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: enabled
       action: log
     - name: cleanup-old-domain
       description: Find domain resources older than 90 days
@@ -602,7 +579,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        unused: true
       action: log
     - name: cleanup-old-group
       description: Find group resources older than 90 days
@@ -620,7 +597,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: enabled
       action: log
     - name: cleanup-old-service
       description: Find service resources older than 90 days
@@ -672,7 +649,7 @@ For more information about Keystone resources and their properties:
 
 **Policy validation fails:**
 - Ensure service name matches exactly: `keystone`
-- Verify resource type is supported: `{user Users [status age_gt unused exempt_names password_expired inactive_days has_admin_role mfa_enabled] [{password_expired bool User password has expired security high } {inactive_days int User has not logged in for N days security medium } {has_admin_role bool User has admin role assigned security high } {mfa_enabled bool User does not have MFA enabled security high }] [log delete tag] {false false false}}`, `{role Roles [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{project Projects [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{domain Domains [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{group Groups [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{service Services [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`
+- Verify resource type is supported: `{user Users [status age_gt unused exempt_names password_expired has_admin_role mfa_enabled] [{password_expired bool User password has expired security high } {has_admin_role bool User has admin role assigned security high } {mfa_enabled bool User does not have MFA enabled security high }] [log delete tag] {false false false}}`, `{role Roles [age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{project Projects [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{domain Domains [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{group Groups [age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{service Services [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**

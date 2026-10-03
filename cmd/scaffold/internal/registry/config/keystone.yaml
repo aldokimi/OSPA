@@ -68,7 +68,7 @@ resources:
   role:
     description: Roles
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
+    checks: [age_gt, unused, exempt_names]
 
   project:
     description: Projects
@@ -83,7 +83,7 @@ resources:
   group:
     description: Groups
     actions: [log, delete, tag]
-    checks: [status, age_gt, unused, exempt_names]
+    checks: [age_gt, unused, exempt_names]
 
   service:
     description: Services

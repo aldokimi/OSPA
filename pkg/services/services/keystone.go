@@ -16,10 +16,10 @@ import (
 //
 // Supported resources:
 //   - user: Users
-//     Checks: status, age_gt, unused, exempt_names, password_expired, inactive_days, has_admin_role, mfa_enabled
+//     Checks: status, age_gt, unused, exempt_names, password_expired, has_admin_role, mfa_enabled
 //     Actions: log, delete, tag
 //   - role: Roles
-//     Checks: status, age_gt, unused, exempt_names
+//     Checks: age_gt, unused, exempt_names
 //     Actions: log, delete, tag
 //   - project: Projects
 //     Checks: status, age_gt, unused, exempt_names
@@ -28,7 +28,7 @@ import (
 //     Checks: status, age_gt, unused, exempt_names
 //     Actions: log, delete, tag
 //   - group: Groups
-//     Checks: status, age_gt, unused, exempt_names
+//     Checks: age_gt, unused, exempt_names
 //     Actions: log, delete, tag
 //   - service: Services
 //     Checks: status, age_gt, unused, exempt_names

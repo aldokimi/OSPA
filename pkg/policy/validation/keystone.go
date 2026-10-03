@@ -26,7 +26,9 @@ func (v *KeystoneValidator) ValidateResource(check *policy.CheckConditions, reso
 		}
 
 	case "role":
-		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names"}); err != nil {
+		// Roles have no status field in keystone v3, so status is not
+		// offered (matches RoleAuditor.ImplementedChecks).
+		if err := validateAllowedChecks(check, []string{"age_gt", "unused", "exempt_names"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 
@@ -41,7 +43,9 @@ func (v *KeystoneValidator) ValidateResource(check *policy.CheckConditions, reso
 		}
 
 	case "group":
-		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names"}); err != nil {
+		// Groups have no status field in keystone v3, so status is not
+		// offered (matches GroupAuditor.ImplementedChecks).
+		if err := validateAllowedChecks(check, []string{"age_gt", "unused", "exempt_names"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

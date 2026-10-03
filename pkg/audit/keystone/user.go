@@ -3,6 +3,7 @@ package keystone
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -11,6 +12,25 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 )
+
+// parseBoolOption interprets a Keystone user option value. The v3 API
+// serializes option values as JSON strings (e.g. "true"/"false"), so a plain
+// type assertion to bool always fails; accept both the string and a native
+// bool (for tests and any future API change).
+func parseBoolOption(v interface{}) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		b, err := strconv.ParseBool(t)
+		if err != nil {
+			return false
+		}
+		return b
+	default:
+		return false
+	}
+}
 
 type userAdapter struct{ u users.User }
 
@@ -82,7 +102,7 @@ func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 	}
 
 	if rule.Check.MFAEnabled != nil {
-		mfaEnabled, _ := u.Options["multi_factor_auth_enabled"].(bool)
+		mfaEnabled := parseBoolOption(u.Options["multi_factor_auth_enabled"])
 		if mfaEnabled != *rule.Check.MFAEnabled {
 			result.Compliant = false
 			result.Observation = fmt.Sprintf("user MFA enabled is %t", mfaEnabled)

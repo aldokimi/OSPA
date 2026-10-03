@@ -73,9 +73,11 @@ func TestUserAuditor_Check_PasswordNotExpired(t *testing.T) {
 	}
 }
 
-func TestUserAuditor_Check_MFAEnabled(t *testing.T) {
+func TestUserAuditor_Check_MFAEnabled_StringOption(t *testing.T) {
+	// Keystone v3 serializes user option values as JSON strings, so the
+	// wire value is "true"/"false" (a string), not a Go bool.
 	auditor := &UserAuditor{}
-	u := users.User{ID: "user-123", Name: "jdoe", Options: map[string]interface{}{"multi_factor_auth_enabled": false}}
+	u := users.User{ID: "user-123", Name: "jdoe", Options: map[string]interface{}{"multi_factor_auth_enabled": "false"}}
 
 	want := true
 	rule := &policy.Rule{
@@ -89,6 +91,25 @@ func TestUserAuditor_Check_MFAEnabled(t *testing.T) {
 	}
 	if result.Compliant {
 		t.Error("Check() expected non-compliant for user without MFA when MFA is required")
+	}
+}
+
+func TestUserAuditor_Check_MFAEnabled_StringOptionSatisfied(t *testing.T) {
+	auditor := &UserAuditor{}
+	u := users.User{ID: "user-123", Name: "jdoe", Options: map[string]interface{}{"multi_factor_auth_enabled": "true"}}
+
+	want := true
+	rule := &policy.Rule{
+		Name:  "require-mfa",
+		Check: policy.CheckConditions{MFAEnabled: &want},
+	}
+
+	result, err := auditor.Check(context.Background(), u, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if !result.Compliant {
+		t.Error("Check() expected compliant for user with MFA when MFA is required")
 	}
 }
 
