@@ -244,14 +244,14 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
-#### Find Inactive Image Resources
+#### Find Error Image Resources
 
 ```yaml
-- name: find-inactive-image
-  description: Find inactive image resources
+- name: find-error-images
+  description: Find image resources in an error state
   resource: image
   check:
-    status: inactive
+    status: ERROR
   action: log
 ```
 
@@ -283,14 +283,14 @@ action_tag_name: "Display Name for Tag"
 ### Member Examples
 
 
-#### Find Inactive Member Resources
+#### Find Rejected Member Resources
 
 ```yaml
-- name: find-inactive-member
-  description: Find inactive member resources
+- name: find-rejected-members
+  description: Find member resources with a rejected status
   resource: member
   check:
-    status: inactive
+    status: rejected
   action: log
 ```
 
@@ -337,7 +337,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: ACTIVE
       action: log
     - name: cleanup-old-image
       description: Find image resources older than 90 days
@@ -355,7 +355,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: accepted
       action: log
     - name: cleanup-old-member
       description: Find member resources older than 90 days
