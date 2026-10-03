@@ -108,6 +108,7 @@ type CheckConditions struct {
 
 	ImageName []string `yaml:"image_name,omitempty"`
 	NoKeypair bool     `yaml:"no_keypair,omitempty"`
+	IsPublic  *bool    `yaml:"is_public,omitempty"`
 
 	// --- Cinder checks ---
 
@@ -187,6 +188,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.NoKeypair {
 		used = append(used, "no_keypair")
+	}
+	if c.IsPublic != nil {
+		used = append(used, "is_public")
 	}
 	if c.Encrypted != nil {
 		used = append(used, "encrypted")

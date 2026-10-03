@@ -199,6 +199,7 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.NoSecurityGroup ||
 		len(check.ImageName) > 0 ||
 		check.NoKeypair ||
+		check.IsPublic != nil ||
 		check.Encrypted != nil ||
 		check.Attached != nil ||
 		check.HasBackup != nil ||
