@@ -101,6 +101,39 @@ func (s *Session) GetNovaClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+// GetKeystoneClient returns a client for Keystone (Identity)
+func (s *Session) GetKeystoneClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("identity", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create keystone client: %w", err)
+	}
+	return client, nil
+}
+
+// GetGlanceClient returns a client for Glance (Image)
+func (s *Session) GetGlanceClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("image", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create glance client: %w", err)
+	}
+	return client, nil
+}
+
+// GetDesignateClient returns a client for Designate (DNS)
+func (s *Session) GetDesignateClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("dns", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create designate client: %w", err)
+	}
+	return client, nil
+}
+
 // GetBarbicanClient returns a client for Barbican (Key Manager)
 func (s *Session) GetBarbicanClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("key-manager", &clientconfig.ClientOpts{

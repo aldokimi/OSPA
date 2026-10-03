@@ -43,5 +43,4 @@ resources:
     checks:
     - status
     - age_gt
-    - unused
     - exempt_names
