@@ -41,6 +41,22 @@ This guide explains how to write policies for Cinder resources in OSPA.
 - **`encrypted`** | high | security | bool | Snapshot is not encrypted
 
 
+### Backup
+
+**Resource Type:** `backup`
+
+**Allowed Actions:** log, delete, tag
+**Allowed Checks:** status, age_gt, exempt_names
+
+
+### Qos
+
+**Resource Type:** `qos`
+
+**Allowed Actions:** log, delete, tag
+**Allowed Checks:** exempt_names
+
+
 
 ## OpenStack Security Guide Checklist
 
@@ -345,6 +361,84 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
+### Backup Examples
+
+
+#### Find Inactive Backup Resources
+
+```yaml
+- name: find-inactive-backup
+  description: Find inactive backup resources
+  resource: backup
+  check:
+    status: inactive
+  action: log
+```
+
+#### Find Old Backup Resources
+
+```yaml
+- name: find-old-backup
+  description: Find backup resources older than 30 days
+  resource: backup
+  check:
+    age_gt: 30d
+  action: log
+```
+
+#### Cleanup Unused Backup Resources
+
+```yaml
+- name: cleanup-unused-backup
+  description: Delete unused backup resources
+  resource: backup
+  check:
+    unused: true
+    exempt_names:
+      - default
+  action: delete
+```
+
+
+### Qos Examples
+
+
+#### Find Inactive Qos Resources
+
+```yaml
+- name: find-inactive-qos
+  description: Find inactive qos resources
+  resource: qos
+  check:
+    status: inactive
+  action: log
+```
+
+#### Find Old Qos Resources
+
+```yaml
+- name: find-old-qos
+  description: Find qos resources older than 30 days
+  resource: qos
+  check:
+    age_gt: 30d
+  action: log
+```
+
+#### Cleanup Unused Qos Resources
+
+```yaml
+- name: cleanup-unused-qos
+  description: Delete unused qos resources
+  resource: qos
+  check:
+    unused: true
+    exempt_names:
+      - default
+  action: delete
+```
+
+
 
 ## Complete Policy Example
 
@@ -393,6 +487,42 @@ policies:
         exempt_names:
           - default
       action: log
+    - name: audit-backup
+      description: Audit backup resources
+      resource: backup
+      severity: medium
+      category: hygiene
+      check:
+        status: active
+      action: log
+    - name: cleanup-old-backup
+      description: Find backup resources older than 90 days
+      resource: backup
+      severity: low
+      category: cost
+      check:
+        age_gt: 90d
+        exempt_names:
+          - default
+      action: log
+    - name: audit-qos
+      description: Audit qos resources
+      resource: qos
+      severity: medium
+      category: hygiene
+      check:
+        status: active
+      action: log
+    - name: cleanup-old-qos
+      description: Find qos resources older than 90 days
+      resource: qos
+      severity: low
+      category: cost
+      check:
+        age_gt: 90d
+        exempt_names:
+          - default
+      action: log
 ```
 
 ## OpenStack Documentation References
@@ -433,7 +563,7 @@ For more information about Cinder resources and their properties:
 
 **Policy validation fails:**
 - Ensure service name matches exactly: `cinder`
-- Verify resource type is supported: `{volume Block storage volumes [status age_gt unused exempt_names encrypted attached has_backup] [{encrypted bool Volume is not encrypted security high Check-Block-09} {attached bool Volume is not attached to any instance cost medium } {has_backup bool Volume has no backup compliance medium }] [log delete tag] {false false false}}`, `{snapshot Volume snapshots [status age_gt unused exempt_names encrypted] [{encrypted bool Snapshot is not encrypted security high }] [log delete tag] {false false false}}`
+- Verify resource type is supported: `{volume Block storage volumes [status age_gt unused exempt_names encrypted attached has_backup] [{encrypted bool Volume is not encrypted security high Check-Block-09} {attached bool Volume is not attached to any instance cost medium } {has_backup bool Volume has no backup compliance medium }] [log delete tag] {false false false}}`, `{snapshot Volume snapshots [status age_gt unused exempt_names encrypted] [{encrypted bool Snapshot is not encrypted security high }] [log delete tag] {false false false}}`, `{backup Volume backups [status age_gt exempt_names] [] [log delete tag] {false false false}}`, `{qos Quality of service specifications [exempt_names] [] [log delete tag] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**

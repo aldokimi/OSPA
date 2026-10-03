@@ -3,21 +3,34 @@ package nova
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
+	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit/common"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
-	// TODO: Import the gophercloud resource type for keypair.
-	// Example: "github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/keypairs"
 )
+
+type keypairAdapter struct{ k keypairs.KeyPair }
+
+func (a keypairAdapter) GetID() string           { return a.k.Name }
+func (a keypairAdapter) GetName() string         { return a.k.Name }
+func (a keypairAdapter) GetProjectID() string    { return "" } // keypairs are user-scoped, not project-scoped
+func (a keypairAdapter) GetStatus() string       { return "" } // keypairs have no status
+func (a keypairAdapter) GetCreatedAt() time.Time { return time.Time{} }
+func (a keypairAdapter) GetUpdatedAt() time.Time { return time.Time{} }
 
 // KeypairAuditor audits nova/keypair resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: age_gt, unused, exempt_names
 // Allowed actions: log, delete, tag
 //
-// TODO: Cast 'resource' to the correct gophercloud type and implement checks.
-// Gophercloud docs: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
-// OpenStack API: https://docs.openstack.org/api-ref/nova
+// Note: gophercloud's keypairs.KeyPair has no timestamp fields, so age_gt
+// is accepted for policy consistency but is a no-op. Determining whether a
+// keypair is actually attached to any instance requires enumerating all
+// servers, which Check() cannot do without a client; unused is likewise
+// accepted but left as a pending observation.
 type KeypairAuditor struct{}
 
 func (a *KeypairAuditor) ResourceType() string {
@@ -25,60 +38,60 @@ func (a *KeypairAuditor) ResourceType() string {
 }
 
 func (a *KeypairAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"age_gt", "unused", "exempt_names"}
 }
 
 func (a *KeypairAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
 	_ = ctx
 
-	// TODO: Cast resource to the correct type.
-	// Example: r := resource.(servers.Server)
-	//
-	// Then populate the result:
-	//   result.ResourceID = r.ID
-	//   result.ResourceName = r.Name
-	//   result.ProjectID = r.TenantID
-	//   result.Status = r.Status
-	//   result.UpdatedAt = r.Updated
-	//
-	// Implement checks based on rule.Check fields:
-	//   - Status: compare r.Status with rule.Check.Status
-	//   - AgeGT: compare time.Since(r.Updated) with rule.Check.AgeGT
-	//   - Unused: implement resource-specific unused detection
-	//   - ExemptNames: skip if r.Name matches any exempt pattern
-
-	result := &audit.Result{
-		RuleID:       rule.Name,
-		ResourceID:   "unknown",
-		ResourceName: "unknown",
-		ProjectID:    "",
-		Compliant:    true,
-		Rule:         rule,
-		Status:       "",
+	k, ok := resource.(keypairs.KeyPair)
+	if !ok {
+		return nil, fmt.Errorf("expected keypairs.KeyPair, got %T", resource)
 	}
 
-	_ = resource
+	adapter := keypairAdapter{k: k}
+	result := common.BuildBaseResult(adapter, rule)
+
+	exempt, err := common.RunCommonChecks(adapter, rule, result)
+	if exempt || err != nil {
+		return result, err
+	}
+
+	if rule.Check.Unused {
+		result.Observation = "unused check pending - requires instance enumeration"
+	}
+
 	return result, nil
 }
 
 func (a *KeypairAuditor) Fix(ctx context.Context, client interface{}, resource interface{}, rule *policy.Rule) error {
 	_ = ctx
-	_ = client
-	_ = resource
 
-	// TODO: Implement remediation actions.
-	// Cast client to *gophercloud.ServiceClient.
-	// Allowed actions: log, delete, tag
-	//
-	// Example for delete:
-	//   c := client.(*gophercloud.ServiceClient)
-	//   r := resource.(servers.Server)
-	//   return servers.Delete(c, r.ID).ExtractErr()
+	if rule.Action == "log" {
+		return nil
+	}
+
+	c, ok := client.(*gophercloud.ServiceClient)
+	if !ok {
+		return fmt.Errorf("expected *gophercloud.ServiceClient, got %T", client)
+	}
+
+	k, ok := resource.(keypairs.KeyPair)
+	if !ok {
+		return fmt.Errorf("expected keypairs.KeyPair, got %T", resource)
+	}
 
 	switch rule.Action {
-	case "log":
+	case "delete":
+		if err := keypairs.Delete(c, k.Name, keypairs.DeleteOpts{}).ExtractErr(); err != nil {
+			return fmt.Errorf("deleting keypair %s: %w", k.Name, err)
+		}
 		return nil
+
+	case "tag":
+		return fmt.Errorf("nova/keypair: tag action not yet implemented")
+
 	default:
-		return fmt.Errorf("%s/%s: action %q not implemented", "nova", "keypair", rule.Action)
+		return fmt.Errorf("nova/keypair: action %q not implemented", rule.Action)
 	}
 }

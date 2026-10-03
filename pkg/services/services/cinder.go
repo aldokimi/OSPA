@@ -21,12 +21,20 @@ import (
 //   - snapshot: Volume snapshots
 //     Checks: status, age_gt, unused, exempt_names
 //     Actions: log, delete, tag
+//   - backup: Volume backups
+//     Checks: status, age_gt, exempt_names
+//     Actions: log, delete, tag
+//   - qos: Quality of service specifications
+//     Checks: exempt_names
+//     Actions: log, delete, tag
 type CinderService struct{}
 
 func init() {
 	rootservices.MustRegister(&CinderService{})
 	rootservices.RegisterResource("cinder", "volume")
 	rootservices.RegisterResource("cinder", "snapshot")
+	rootservices.RegisterResource("cinder", "backup")
+	rootservices.RegisterResource("cinder", "qos")
 }
 
 func (s *CinderService) Name() string {
@@ -43,6 +51,10 @@ func (s *CinderService) GetResourceAuditor(resourceType string) (audit.Auditor, 
 		return &cinder.VolumeAuditor{}, nil
 	case "snapshot":
 		return &cinder.SnapshotAuditor{}, nil
+	case "backup":
+		return &cinder.BackupAuditor{}, nil
+	case "qos":
+		return &cinder.QosAuditor{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}
@@ -54,6 +66,10 @@ func (s *CinderService) GetResourceDiscoverer(resourceType string) (discovery.Di
 		return &discovery_services.CinderVolumeDiscoverer{}, nil
 	case "snapshot":
 		return &discovery_services.CinderSnapshotDiscoverer{}, nil
+	case "backup":
+		return &discovery_services.CinderBackupDiscoverer{}, nil
+	case "qos":
+		return &discovery_services.CinderQosDiscoverer{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}

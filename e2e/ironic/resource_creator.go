@@ -1,6 +1,6 @@
 //go:build e2e
 
-// Package cinder contains e2e tests for the Cinder service.
+// Package ironic contains e2e tests for the Ironic service.
 //
 // =============================================================================
 // RESOURCE CREATOR - READ THIS FIRST
@@ -15,30 +15,39 @@
 // 3. Return a cleanup function that deletes resources in reverse order
 // 4. Use these functions in the corresponding <resource>_test.go files
 //
-// DEPENDENCY GRAPH FOR Cinder:
+// DEPENDENCY GRAPH FOR Ironic:
 // =============================================================================
 
-// Volume:
-//   Description: Block storage volumes
+// Node:
+//   Description: Bare metal nodes
 //   Gophercloud: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
-//   OpenStack API: https://docs.openstack.org/api-ref/cinder
+//   OpenStack API: https://docs.openstack.org/api-ref/ironic
 
-// Snapshot:
-//   Description: Volume snapshots
+// Port:
+//   Description: Node ports
 //   Gophercloud: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
-//   OpenStack API: https://docs.openstack.org/api-ref/cinder
+//   OpenStack API: https://docs.openstack.org/api-ref/ironic
+
+// Driver:
+//   Description: Drivers
+//   Gophercloud: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
+//   OpenStack API: https://docs.openstack.org/api-ref/ironic
+
+// Chassis:
+//   Description: Chassis
+//   Gophercloud: https://pkg.go.dev/github.com/gophercloud/gophercloud/openstack
+//   OpenStack API: https://docs.openstack.org/api-ref/ironic
 
 // =============================================================================
 
-package cinder
+package ironic
 
 import (
 	"testing"
 
 	"github.com/gophercloud/gophercloud"
 	// TODO: Import the specific gophercloud packages you need:
-	// "github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
-	// "github.com/gophercloud/gophercloud/openstack/blockstorage/v3/snapshots"
+	// "github.com/gophercloud/gophercloud/openstack/<service>/<version>/<resource>"
 )
 
 const testPrefix = "ospa-e2e-"
@@ -48,30 +57,58 @@ const testPrefix = "ospa-e2e-"
 // =============================================================================
 
 
-// CreateVolume creates a test volume and returns:
+// CreateNode creates a test node and returns:
 //   - resourceID: The ID of the created resource (for filtering audit results)
 //   - cleanup: A function to delete the resource and its dependencies
-func CreateVolume(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
 	t.Helper()
 	
 	// TODO: Implement resource creation
 	// See the example above and the gophercloud documentation
 	
-	t.Skip("CreateVolume not implemented - implement in resource_creator.go")
+	t.Skip("CreateNode not implemented - implement in resource_creator.go")
 	return "", func() {}
 }
 
 
-// CreateSnapshot creates a test snapshot and returns:
+// CreatePort creates a test port and returns:
 //   - resourceID: The ID of the created resource (for filtering audit results)
 //   - cleanup: A function to delete the resource and its dependencies
-func CreateSnapshot(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+func CreatePort(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
 	t.Helper()
 	
 	// TODO: Implement resource creation
 	// See the example above and the gophercloud documentation
 	
-	t.Skip("CreateSnapshot not implemented - implement in resource_creator.go")
+	t.Skip("CreatePort not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
+
+// CreateDriver creates a test driver and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateDriver(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateDriver not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
+
+// CreateChassis creates a test chassis and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateChassis(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateChassis not implemented - implement in resource_creator.go")
 	return "", func() {}
 }
 
@@ -80,37 +117,9 @@ func CreateSnapshot(t *testing.T, client *gophercloud.ServiceClient) (resourceID
 // CLEANUP HELPER
 // =============================================================================
 
-
-
-// CreateBackup creates a test backup and returns:
-//   - resourceID: The ID of the created resource (for filtering audit results)
-//   - cleanup: A function to delete the resource and its dependencies
-func CreateBackup(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
-	t.Helper()
-	
-	// TODO: Implement resource creation
-	// See the example above and the gophercloud documentation
-	
-	t.Skip("CreateBackup not implemented - implement in resource_creator.go")
-	return "", func() {}
-}
-
-// CreateQos creates a test qos and returns:
-//   - resourceID: The ID of the created resource (for filtering audit results)
-//   - cleanup: A function to delete the resource and its dependencies
-func CreateQos(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
-	t.Helper()
-	
-	// TODO: Implement resource creation
-	// See the example above and the gophercloud documentation
-	
-	t.Skip("CreateQos not implemented - implement in resource_creator.go")
-	return "", func() {}
-}
-
 // CleanupOrphans deletes any leaked test resources (those with testPrefix).
 // Run this manually if tests fail and leave resources behind:
-//   go test -tags=e2e ./e2e/cinder/... -run TestCleanupOrphans
+//   go test -tags=e2e ./e2e/ironic/... -run TestCleanupOrphans
 func CleanupOrphans(t *testing.T, client *gophercloud.ServiceClient) {
 	t.Helper()
 	
