@@ -97,6 +97,46 @@ func skipOrFail(t *testing.T, service string, err error) {
 	t.Fatalf("Failed to get %s client: %v", service, err)
 }
 
+// GetIdentityClient returns a gophercloud client for the Keystone service.
+func (e *TestEngine) GetIdentityClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetKeystoneClient()
+	if err != nil {
+		t.Fatalf("Failed to get keystone client: %v", err)
+	}
+	return client
+}
+
+// GetImageClient returns a gophercloud client for the Glance service.
+func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetGlanceClient()
+	if err != nil {
+		t.Fatalf("Failed to get glance client: %v", err)
+	}
+	return client
+}
+
+// GetDesignateClient returns a gophercloud client for the Designate service.
+func (e *TestEngine) GetDesignateClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetDesignateClient()
+	if err != nil {
+		t.Fatalf("Failed to get designate client: %v", err)
+	}
+	return client
+}
+
+// GetBarbicanClient returns a gophercloud client for the Barbican service.
+func (e *TestEngine) GetBarbicanClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetBarbicanClient()
+	if err != nil {
+		t.Fatalf("Failed to get barbican client: %v", err)
+	}
+	return client
+}
+
 // GetObjectStorageClient returns a gophercloud client for the Swift service.
 func (e *TestEngine) GetObjectStorageClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()

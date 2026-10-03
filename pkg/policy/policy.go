@@ -124,7 +124,6 @@ type CheckConditions struct {
 
 	PasswordExpired bool   `yaml:"password_expired,omitempty"`
 	MFAEnabled      *bool  `yaml:"mfa_enabled,omitempty"`
-	InactiveDays    int    `yaml:"inactive_days,omitempty"`
 	HasAdminRole    bool   `yaml:"has_admin_role,omitempty"`
 	TokenProvider   string `yaml:"token_provider,omitempty"`
 
@@ -209,9 +208,6 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.MFAEnabled != nil {
 		used = append(used, "mfa_enabled")
-	}
-	if c.InactiveDays != 0 {
-		used = append(used, "inactive_days")
 	}
 	if c.HasAdminRole {
 		used = append(used, "has_admin_role")
