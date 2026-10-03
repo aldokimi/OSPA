@@ -80,6 +80,47 @@ func CreateKeypair(t *testing.T, client *gophercloud.ServiceClient) (resourceID 
 // CLEANUP HELPER
 // =============================================================================
 
+
+
+// CreateFlavor creates a test flavor and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateFlavor(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateFlavor not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
+// CreateHypervisor creates a test hypervisor and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateHypervisor(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateHypervisor not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
+// CreateServer creates a test server and returns:
+//   - resourceID: The ID of the created resource (for filtering audit results)
+//   - cleanup: A function to delete the resource and its dependencies
+func CreateServer(t *testing.T, client *gophercloud.ServiceClient) (resourceID string, cleanup func()) {
+	t.Helper()
+	
+	// TODO: Implement resource creation
+	// See the example above and the gophercloud documentation
+	
+	t.Skip("CreateServer not implemented - implement in resource_creator.go")
+	return "", func() {}
+}
+
 // CleanupOrphans deletes any leaked test resources (those with testPrefix).
 // Run this manually if tests fail and leave resources behind:
 //   go test -tags=e2e ./e2e/nova/... -run TestCleanupOrphans
