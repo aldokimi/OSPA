@@ -1,81 +1,53 @@
-# Policy Guide: Nova (nova)
+# Policy Guide: Ironic (ironic)
 
-This guide explains how to write policies for Nova resources in OSPA.
+This guide explains how to write policies for Ironic resources in OSPA.
 
 ## Service Overview
 
-**Service Name:** `nova`
-**Display Name:** Nova
-**OpenStack Service Type:** compute
+**Service Name:** `ironic`
+**Display Name:** Ironic
+**OpenStack Service Type:** baremetal
 
 ## Supported Resources
 
 
-### Instance
+### Node
 
-**Resource Type:** `instance`
-
-**Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names, image_name, no_keypair
-
-#### Security & Domain Checks
-
-| Check | Severity | Category | Type | Description |
-|-------|----------|----------|------|-------------|
-- **`image_name`** | medium | compliance | string_list | Instance uses a deprecated or banned image
-- **`no_keypair`** | medium | security | bool | Instance has no SSH keypair attached
-
-
-### Keypair
-
-**Resource Type:** `keypair`
+**Resource Type:** `node`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** age_gt, unused, exempt_names
+**Allowed Checks:** status, age_gt, unused, exempt_names
 
 
-### Flavor
+### Port
 
-**Resource Type:** `flavor`
+**Resource Type:** `port`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** exempt_names, is_public
-
-#### Security & Domain Checks
-
-| Check | Severity | Category | Type | Description |
-|-------|----------|----------|------|-------------|
-- **`is_public`** | low | compliance | bool | Flavor is public
+**Allowed Checks:** status, age_gt, unused, exempt_names
 
 
-### Hypervisor
+### Driver
 
-**Resource Type:** `hypervisor`
+**Resource Type:** `driver`
 
-**Allowed Actions:** log
-**Allowed Checks:** status, exempt_names
+**Allowed Actions:** log, delete, tag
+**Allowed Checks:** status, age_gt, unused, exempt_names
 
 
+### Chassis
 
-## OpenStack Security Guide Checklist
+**Resource Type:** `chassis`
 
-The following items from the OpenStack Security Guide apply to Nova.
-These are **configuration-level** checks that require manual verification on
-the control plane (not API-auditable).
+**Allowed Actions:** log, delete, tag
+**Allowed Checks:** status, age_gt, unused, exempt_names
 
-| ID | Description | Section | Manual |
-|----|-------------|---------|--------|
-- **Check-Compute-01** | User/group ownership of config files set to root/nova | compute/checklist | Yes
-- **Check-Compute-02** | Strict permissions (640) on configuration files | compute/checklist | Yes
-- **Check-Compute-03** | Keystone used for authentication | compute/checklist | Yes
-- **Check-Compute-04** | Secure protocol (TLS) for authentication | compute/checklist | Yes
-- **Check-Compute-05** | Nova communicates with Glance over TLS | compute/checklist | Yes
 
 
 
 ## Policy Structure
 
-All policies for Nova follow this structure:
+All policies for Ironic follow this structure:
 
 ```yaml
 version: v1
@@ -83,7 +55,7 @@ defaults:
   workers: 50
   output: findings.json
 policies:
-  - nova:
+  - ironic:
     - name: rule-name
       description: Rule description
       resource: <resource_type>
@@ -112,7 +84,7 @@ check:
 **Example:**
 ```yaml
 - name: find-inactive-resources
-  description: Find inactive nova resources
+  description: Find inactive ironic resources
   resource: <resource_type>
   check:
     status: inactive
@@ -155,7 +127,7 @@ check:
 **Example:**
 ```yaml
 - name: find-unused-resources
-  description: Find unused nova resources
+  description: Find unused ironic resources
   resource: <resource_type>
   check:
     unused: true
@@ -199,7 +171,7 @@ action: log
 **Example:**
 ```yaml
 - name: audit-resources
-  description: Audit nova resources
+  description: Audit ironic resources
   resource: <resource_type>
   check:
     status: inactive
@@ -251,50 +223,37 @@ action_tag_name: "Display Name for Tag"
 ## Resource-Specific Examples
 
 
-### Instance Examples
-
-#### Security Check Example
-
-```yaml
-- name: security-check-instance-image_name
-  description: "Instance uses a deprecated or banned image"
-  resource: instance
-  severity: medium
-  category: compliance
-  check:
-    image_name: true
-  action: log
-```
+### Node Examples
 
 
-#### Find Inactive Instance Resources
+#### Find Inactive Node Resources
 
 ```yaml
-- name: find-inactive-instance
-  description: Find inactive instance resources
-  resource: instance
+- name: find-inactive-node
+  description: Find inactive node resources
+  resource: node
   check:
     status: inactive
   action: log
 ```
 
-#### Find Old Instance Resources
+#### Find Old Node Resources
 
 ```yaml
-- name: find-old-instance
-  description: Find instance resources older than 30 days
-  resource: instance
+- name: find-old-node
+  description: Find node resources older than 30 days
+  resource: node
   check:
     age_gt: 30d
   action: log
 ```
 
-#### Cleanup Unused Instance Resources
+#### Cleanup Unused Node Resources
 
 ```yaml
-- name: cleanup-unused-instance
-  description: Delete unused instance resources
-  resource: instance
+- name: cleanup-unused-node
+  description: Delete unused node resources
+  resource: node
   check:
     unused: true
     exempt_names:
@@ -303,37 +262,37 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
-### Keypair Examples
+### Port Examples
 
 
-#### Find Inactive Keypair Resources
+#### Find Inactive Port Resources
 
 ```yaml
-- name: find-inactive-keypair
-  description: Find inactive keypair resources
-  resource: keypair
+- name: find-inactive-port
+  description: Find inactive port resources
+  resource: port
   check:
     status: inactive
   action: log
 ```
 
-#### Find Old Keypair Resources
+#### Find Old Port Resources
 
 ```yaml
-- name: find-old-keypair
-  description: Find keypair resources older than 30 days
-  resource: keypair
+- name: find-old-port
+  description: Find port resources older than 30 days
+  resource: port
   check:
     age_gt: 30d
   action: log
 ```
 
-#### Cleanup Unused Keypair Resources
+#### Cleanup Unused Port Resources
 
 ```yaml
-- name: cleanup-unused-keypair
-  description: Delete unused keypair resources
-  resource: keypair
+- name: cleanup-unused-port
+  description: Delete unused port resources
+  resource: port
   check:
     unused: true
     exempt_names:
@@ -342,50 +301,37 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
-### Flavor Examples
-
-#### Security Check Example
-
-```yaml
-- name: security-check-flavor-is_public
-  description: "Flavor is public"
-  resource: flavor
-  severity: low
-  category: compliance
-  check:
-    is_public: true
-  action: log
-```
+### Driver Examples
 
 
-#### Find Inactive Flavor Resources
+#### Find Inactive Driver Resources
 
 ```yaml
-- name: find-inactive-flavor
-  description: Find inactive flavor resources
-  resource: flavor
+- name: find-inactive-driver
+  description: Find inactive driver resources
+  resource: driver
   check:
     status: inactive
   action: log
 ```
 
-#### Find Old Flavor Resources
+#### Find Old Driver Resources
 
 ```yaml
-- name: find-old-flavor
-  description: Find flavor resources older than 30 days
-  resource: flavor
+- name: find-old-driver
+  description: Find driver resources older than 30 days
+  resource: driver
   check:
     age_gt: 30d
   action: log
 ```
 
-#### Cleanup Unused Flavor Resources
+#### Cleanup Unused Driver Resources
 
 ```yaml
-- name: cleanup-unused-flavor
-  description: Delete unused flavor resources
-  resource: flavor
+- name: cleanup-unused-driver
+  description: Delete unused driver resources
+  resource: driver
   check:
     unused: true
     exempt_names:
@@ -394,37 +340,37 @@ action_tag_name: "Display Name for Tag"
 ```
 
 
-### Hypervisor Examples
+### Chassis Examples
 
 
-#### Find Inactive Hypervisor Resources
+#### Find Inactive Chassis Resources
 
 ```yaml
-- name: find-inactive-hypervisor
-  description: Find inactive hypervisor resources
-  resource: hypervisor
+- name: find-inactive-chassis
+  description: Find inactive chassis resources
+  resource: chassis
   check:
     status: inactive
   action: log
 ```
 
-#### Find Old Hypervisor Resources
+#### Find Old Chassis Resources
 
 ```yaml
-- name: find-old-hypervisor
-  description: Find hypervisor resources older than 30 days
-  resource: hypervisor
+- name: find-old-chassis
+  description: Find chassis resources older than 30 days
+  resource: chassis
   check:
     age_gt: 30d
   action: log
 ```
 
-#### Cleanup Unused Hypervisor Resources
+#### Cleanup Unused Chassis Resources
 
 ```yaml
-- name: cleanup-unused-hypervisor
-  description: Delete unused hypervisor resources
-  resource: hypervisor
+- name: cleanup-unused-chassis
+  description: Delete unused chassis resources
+  resource: chassis
   check:
     unused: true
     exempt_names:
@@ -436,7 +382,7 @@ action_tag_name: "Display Name for Tag"
 
 ## Complete Policy Example
 
-Here's a complete policy file example for Nova:
+Here's a complete policy file example for Ironic:
 
 ```yaml
 version: v1
@@ -444,18 +390,18 @@ defaults:
   workers: 50
   output: findings.json
 policies:
-  - nova:
-    - name: audit-instance
-      description: Audit instance resources
-      resource: instance
+  - ironic:
+    - name: audit-node
+      description: Audit node resources
+      resource: node
       severity: medium
       category: hygiene
       check:
         status: active
       action: log
-    - name: cleanup-old-instance
-      description: Find instance resources older than 90 days
-      resource: instance
+    - name: cleanup-old-node
+      description: Find node resources older than 90 days
+      resource: node
       severity: low
       category: cost
       check:
@@ -463,17 +409,17 @@ policies:
         exempt_names:
           - default
       action: log
-    - name: audit-keypair
-      description: Audit keypair resources
-      resource: keypair
+    - name: audit-port
+      description: Audit port resources
+      resource: port
       severity: medium
       category: hygiene
       check:
         status: active
       action: log
-    - name: cleanup-old-keypair
-      description: Find keypair resources older than 90 days
-      resource: keypair
+    - name: cleanup-old-port
+      description: Find port resources older than 90 days
+      resource: port
       severity: low
       category: cost
       check:
@@ -481,17 +427,17 @@ policies:
         exempt_names:
           - default
       action: log
-    - name: audit-flavor
-      description: Audit flavor resources
-      resource: flavor
+    - name: audit-driver
+      description: Audit driver resources
+      resource: driver
       severity: medium
       category: hygiene
       check:
         status: active
       action: log
-    - name: cleanup-old-flavor
-      description: Find flavor resources older than 90 days
-      resource: flavor
+    - name: cleanup-old-driver
+      description: Find driver resources older than 90 days
+      resource: driver
       severity: low
       category: cost
       check:
@@ -499,17 +445,17 @@ policies:
         exempt_names:
           - default
       action: log
-    - name: audit-hypervisor
-      description: Audit hypervisor resources
-      resource: hypervisor
+    - name: audit-chassis
+      description: Audit chassis resources
+      resource: chassis
       severity: medium
       category: hygiene
       check:
         status: active
       action: log
-    - name: cleanup-old-hypervisor
-      description: Find hypervisor resources older than 90 days
-      resource: hypervisor
+    - name: cleanup-old-chassis
+      description: Find chassis resources older than 90 days
+      resource: chassis
       severity: low
       category: cost
       check:
@@ -521,10 +467,10 @@ policies:
 
 ## OpenStack Documentation References
 
-For more information about Nova resources and their properties:
+For more information about Ironic resources and their properties:
 
-- **OpenStack Nova API Documentation:** https://docs.openstack.org/api-ref/nova/
-- **Nova Service Guide:** https://docs.openstack.org/nova/latest/
+- **OpenStack Ironic API Documentation:** https://docs.openstack.org/api-ref/ironic/
+- **Ironic Service Guide:** https://docs.openstack.org/ironic/latest/
 - **OpenStack Security Guide:** https://docs.openstack.org/security-guide/
 
 ## Testing Your Policy
@@ -556,8 +502,8 @@ For more information about Nova resources and their properties:
 ## Troubleshooting
 
 **Policy validation fails:**
-- Ensure service name matches exactly: `nova`
-- Verify resource type is supported: `{instance Server instances [status age_gt unused exempt_names image_name no_keypair] [{image_name string_list Instance uses a deprecated or banned image compliance medium } {no_keypair bool Instance has no SSH keypair attached security medium }] [log delete tag] {false false false}}`, `{keypair SSH keypairs [age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{flavor Flavor definitions [exempt_names is_public] [{is_public bool Flavor is public compliance low }] [log delete tag] {false false false}}`, `{hypervisor Hypervisor information [status exempt_names] [] [log] {false false false}}`
+- Ensure service name matches exactly: `ironic`
+- Verify resource type is supported: `{node Bare metal nodes [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{port Node ports [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{driver Drivers [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{chassis Chassis [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**

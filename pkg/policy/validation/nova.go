@@ -30,6 +30,16 @@ func (v *NovaValidator) ValidateResource(check *policy.CheckConditions, resource
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 
+	case "flavor":
+		if err := validateAllowedChecks(check, []string{"exempt_names", "is_public"}); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
+
+	case "hypervisor":
+		if err := validateAllowedChecks(check, []string{"status", "exempt_names"}); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
+
 	default:
 		return fmt.Errorf("rule %q: unsupported resource type %q for nova service", ruleName, resourceType)
 	}

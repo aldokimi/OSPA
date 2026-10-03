@@ -30,20 +30,13 @@ resources:
     - delete
     - tag
     checks:
-    - status
     - age_gt
-    - unused
     - exempt_names
   driver:
     description: Drivers
     actions:
     - log
-    - delete
-    - tag
     checks:
-    - status
-    - age_gt
-    - unused
     - exempt_names
   chassis:
     description: Chassis
@@ -52,7 +45,5 @@ resources:
     - delete
     - tag
     checks:
-    - status
     - age_gt
-    - unused
     - exempt_names
