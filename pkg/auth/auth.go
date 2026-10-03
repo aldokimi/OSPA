@@ -166,3 +166,14 @@ func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	}
 	return client, nil
 }
+
+// GetMagnumClient returns a client for Magnum.
+func (s *Session) GetMagnumClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("container-infra", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create magnum client: %w", err)
+	}
+	return client, nil
+}

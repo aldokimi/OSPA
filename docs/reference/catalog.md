@@ -124,10 +124,10 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `cluster` | — | — | — |
-| `cluster_template` | — | — | — |
-| `bay` | — | — | — |
-| `baymodel` | — | — | — |
+| `cluster` | ✔ | status, age_gt, exempt_names | log, delete |
+| `cluster_template` | ✔ | age_gt, exempt_names | log, delete |
+| `bay` | ✔ | status, age_gt, exempt_names | log, delete |
+| `baymodel` | ✔ | age_gt, exempt_names | log, delete |
 
 ### Ironic (Bare Metal)
 

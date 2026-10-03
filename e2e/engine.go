@@ -157,6 +157,16 @@ func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	return client
 }
 
+// GetMagnumClient returns a gophercloud client for the Magnum service.
+func (e *TestEngine) GetMagnumClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetMagnumClient()
+	if err != nil {
+		t.Fatalf("Failed to get magnum client: %v", err)
+	}
+	return client
+}
+
 // LoadPolicy loads a policy from the configured path or a custom path
 func (e *TestEngine) LoadPolicy(t *testing.T, customPath ...string) *policy.Policy {
 	t.Helper()
