@@ -32,7 +32,7 @@ This guide explains how to write policies for Barbican resources in OSPA.
 **Resource Type:** `order`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** status, age_gt, exempt_names
 
 
 
@@ -232,14 +232,14 @@ action_tag_name: "Display Name for Tag"
 ### Secret Examples
 
 
-#### Find Inactive Secret Resources
+#### Find Deactivated Secret Resources
 
 ```yaml
-- name: find-inactive-secret
-  description: Find inactive secret resources
+- name: find-deactivated-secrets
+  description: Find deactivated secret resources
   resource: secret
   check:
-    status: inactive
+    status: DEACTIVATED
   action: log
 ```
 
@@ -271,14 +271,14 @@ action_tag_name: "Display Name for Tag"
 ### Container Examples
 
 
-#### Find Inactive Container Resources
+#### Find Deactivated Container Resources
 
 ```yaml
-- name: find-inactive-container
-  description: Find inactive container resources
+- name: find-deactivated-containers
+  description: Find deactivated container resources
   resource: container
   check:
-    status: inactive
+    status: DEACTIVATED
   action: log
 ```
 
@@ -310,14 +310,14 @@ action_tag_name: "Display Name for Tag"
 ### Order Examples
 
 
-#### Find Inactive Order Resources
+#### Find Failed Order Resources
 
 ```yaml
-- name: find-inactive-order
-  description: Find inactive order resources
+- name: find-failed-orders
+  description: Find order resources in a failed state
   resource: order
   check:
-    status: inactive
+    status: FAILED
   action: log
 ```
 
@@ -330,19 +330,6 @@ action_tag_name: "Display Name for Tag"
   check:
     age_gt: 30d
   action: log
-```
-
-#### Cleanup Unused Order Resources
-
-```yaml
-- name: cleanup-unused-order
-  description: Delete unused order resources
-  resource: order
-  check:
-    unused: true
-    exempt_names:
-      - default
-  action: delete
 ```
 
 
@@ -364,7 +351,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: ACTIVE
       action: log
     - name: cleanup-old-secret
       description: Find secret resources older than 90 days
@@ -382,7 +369,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: ACTIVE
       action: log
     - name: cleanup-old-container
       description: Find container resources older than 90 days
@@ -400,7 +387,7 @@ policies:
       severity: medium
       category: hygiene
       check:
-        status: active
+        status: ACTIVE
       action: log
     - name: cleanup-old-order
       description: Find order resources older than 90 days
@@ -452,7 +439,7 @@ For more information about Barbican resources and their properties:
 
 **Policy validation fails:**
 - Ensure service name matches exactly: `barbican`
-- Verify resource type is supported: `{secret Secrets [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{container Secret containers [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{order Orders [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`
+- Verify resource type is supported: `{secret Secrets [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{container Secret containers [status age_gt unused exempt_names] [] [log delete tag] {false false false}}`, `{order Orders [status age_gt exempt_names] [] [log delete tag] {false false false}}`
 - Check YAML syntax is correct
 
 **No resources found:**

@@ -22,7 +22,7 @@ import (
 //     Checks: status, age_gt, unused, exempt_names
 //     Actions: log, delete, tag
 //   - order: Orders
-//     Checks: status, age_gt, unused, exempt_names
+//     Checks: status, age_gt, exempt_names
 //     Actions: log, delete, tag
 type BarbicanService struct{}
 
