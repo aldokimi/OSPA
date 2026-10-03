@@ -60,12 +60,12 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `user` | — | — | — |
-| `role` | — | — | — |
-| `project` | — | — | — |
-| `domain` | — | — | — |
-| `group` | — | — | — |
-| `service` | — | — | — |
+| `user` | ✔ | status, age_gt, unused, exempt_names, password_expired, has_admin_role, mfa_enabled | log, delete, tag |
+| `role` | ✔ | age_gt, unused, exempt_names | log, delete, tag |
+| `project` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `domain` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `group` | ✔ | age_gt, unused, exempt_names | log, delete, tag |
+| `service` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
 
 ### Heat (Orchestration)
 
