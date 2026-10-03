@@ -226,3 +226,48 @@ These fields classify rules at the policy level and are not check conditions:
 | `tag` | Add tag to resource | No |
 | `delete` | Delete the resource | **Yes** |
 
+
+### Manila (Shared File Systems)
+
+| Resource | Status | Checks | Actions |
+|----------|--------|--------|---------|
+| `share` | ◐ | status, age_gt, unused, exempt_names | log, delete |
+| `share_snapshot` | ◐ | status, age_gt, exempt_names | log, delete |
+| `share_network` | ◐ | age_gt, exempt_names | log |
+| `share_server` | ◐ | status, age_gt, exempt_names | log, delete |
+
+### Octavia (Load Balancing)
+
+| Resource | Status | Checks | Actions |
+|----------|--------|--------|---------|
+| `loadbalancer` | ◐ | status, age_gt, exempt_names | log, delete |
+| `listener` | ◐ | status, age_gt, exempt_names | log, delete |
+| `pool` | ◐ | status, age_gt, exempt_names | log, delete |
+| `member` | ◐ | status, age_gt, exempt_names | log, delete |
+| `healthmonitor` | ◐ | status, age_gt, exempt_names | log, delete |
+
+### Senlin (Clustering)
+
+| Resource | Status | Checks | Actions |
+|----------|--------|--------|---------|
+| `cluster` | ◐ | status, age_gt, exempt_names | log, delete |
+| `profile` | ◐ | age_gt, exempt_names | log, delete |
+| `node` | ◐ | status, age_gt, exempt_names | log, delete |
+| `policy` | ◐ | age_gt, exempt_names | log, delete |
+
+### Trove (Database)
+
+| Resource | Status | Checks | Actions |
+|----------|--------|--------|---------|
+| `instance` | ◐ | status, age_gt, exempt_names | log, delete |
+| `cluster` | ◐ | status, age_gt, exempt_names | log, delete |
+| `backup` | ◐ | age_gt, exempt_names | log, delete |
+| `datastore` | ◐ | age_gt, exempt_names | log, delete |
+
+### Zaqar (Messaging)
+
+| Resource | Status | Checks | Actions |
+|----------|--------|--------|---------|
+| `queue` | ◐ | status, age_gt, exempt_names | log, delete |
+| `message` | ◐ | status, age_gt, exempt_names | log, delete |
+| `subscription` | ◐ | status, age_gt, exempt_names | log, delete |

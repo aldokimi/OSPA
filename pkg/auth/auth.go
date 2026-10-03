@@ -167,6 +167,61 @@ func (s *Session) GetIronicClient() (*gophercloud.ServiceClient, error) {
 	return client, nil
 }
 
+// GetManilaClient returns a client for Manila (Shared File Systems).
+func (s *Session) GetManilaClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("shared-file-systems", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create manila client: %w", err)
+	}
+	return client, nil
+}
+
+// GetOctaviaClient returns a client for Octavia (Load Balancing).
+func (s *Session) GetOctaviaClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("load-balancer", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create octavia client: %w", err)
+	}
+	return client, nil
+}
+
+// GetSenlinClient returns a client for Senlin (Clustering).
+func (s *Session) GetSenlinClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("clustering", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create senlin client: %w", err)
+	}
+	return client, nil
+}
+
+// GetTroveClient returns a client for Trove (Database).
+func (s *Session) GetTroveClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("database", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create trove client: %w", err)
+	}
+	return client, nil
+}
+
+// GetZaqarClient returns a client for Zaqar (Messaging).
+func (s *Session) GetZaqarClient() (*gophercloud.ServiceClient, error) {
+	client, err := clientconfig.NewServiceClient("messaging", &clientconfig.ClientOpts{
+		Cloud: s.CloudName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create zaqar client: %w", err)
+	}
+	return client, nil
+}
+
 // GetMagnumClient returns a client for Magnum.
 func (s *Session) GetMagnumClient() (*gophercloud.ServiceClient, error) {
 	client, err := clientconfig.NewServiceClient("container-infra", &clientconfig.ClientOpts{
