@@ -97,6 +97,16 @@ func skipOrFail(t *testing.T, service string, err error) {
 	t.Fatalf("Failed to get %s client: %v", service, err)
 }
 
+// GetIdentityClient returns a gophercloud client for the Keystone service.
+func (e *TestEngine) GetIdentityClient(t *testing.T) *gophercloud.ServiceClient {
+	t.Helper()
+	client, err := e.Session.GetKeystoneClient()
+	if err != nil {
+		t.Fatalf("Failed to get keystone client: %v", err)
+	}
+	return client
+}
+
 // GetImageClient returns a gophercloud client for the Glance service.
 func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
