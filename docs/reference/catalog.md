@@ -142,9 +142,9 @@ This page provides a comprehensive list of all OpenStack resources that OSPA can
 
 | Resource | Status | Checks | Actions |
 |----------|--------|--------|---------|
-| `zone` | — | — | — |
-| `recordset` | — | — | — |
-| `record` | — | — | — |
+| `zone` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `recordset` | ✔ | status, age_gt, unused, exempt_names | log, delete, tag |
+| `record` | ✔ | status, age_gt, exempt_names | log, delete, tag |
 
 ### Senlin (Clustering)
 
