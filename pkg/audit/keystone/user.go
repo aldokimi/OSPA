@@ -94,19 +94,31 @@ func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 		result.Observation = "user account is disabled"
 	}
 
+	passwordExpiredHit := false
 	if rule.Check.PasswordExpired {
 		if !u.PasswordExpiresAt.IsZero() && time.Now().After(u.PasswordExpiresAt) {
+			passwordExpiredHit = true
 			result.Compliant = false
 			result.Observation = fmt.Sprintf("password expired at %s", u.PasswordExpiresAt.Format(time.RFC3339))
 		}
 	}
 
+	mfaHit := false
+	mfaEnabled := parseBoolOption(u.Options["multi_factor_auth_enabled"])
 	if rule.Check.MFAEnabled != nil {
-		mfaEnabled := parseBoolOption(u.Options["multi_factor_auth_enabled"])
 		if mfaEnabled != *rule.Check.MFAEnabled {
+			mfaHit = true
 			result.Compliant = false
 			result.Observation = fmt.Sprintf("user MFA enabled is %t", mfaEnabled)
 		}
+	}
+
+	// #111 catalog outcome when both atomics fire together.
+	if passwordExpiredHit && mfaHit {
+		result.Observation = fmt.Sprintf(
+			"expired_password_no_mfa: password expired at %s and MFA enabled is %t",
+			u.PasswordExpiresAt.Format(time.RFC3339), mfaEnabled,
+		)
 	}
 
 	if rule.Check.HasAdminRole {
