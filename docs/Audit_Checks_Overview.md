@@ -106,14 +106,13 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Gaps / enhancements (verified):**
   - **DONE (#115):** container ACL modeled via Get; composite `public_container_aged_object`.
 
-### 8. Octavia (`octavia` / load-balancer) — Stub
+### 8. Octavia (`octavia` / load-balancer) — Live (hygiene + TLS)
 
 - **Supported Resources:** `loadbalancer`, `listener`, `pool`, `member`, `healthmonitor`
-- **Existing Checks:** declared hygiene only; **auditors are stubs** (`Check` returns empty compliant result)
+- **Existing Checks (implemented):** hygiene via real discovery/auditors; listener `protocol`/`port`/`tls_ciphers`/`has_tls_container`; pool `protocol`; member `port`; composite `insecure_public_listener` (#122)
 - **Gaps / enhancements (verified):**
-  - **REAL (blocked by stubs first):** wire live discovery + hygiene evaluation.
-  - **REAL (OSPA model); SDK-capable:** listener `Protocol`, `ProtocolPort`, `TLSCiphers`, `DefaultTlsContainerRef` exist in gophercloud — TLS/protocol hardening is an OSPA modeling gap more than an OpenStack API gap.
-  - Candidate composites once live: public LB + weak TLS min / insecure protocol + wide exposure.
+  - **DONE (#122):** un-stubbed discovery + auditors; modeled listener TLS/protocol/port; atomic `insecure_listener_tls`; composite `insecure_public_listener`.
+  - **PARTIAL / availability:** listener/pool/healthmonitor `age_gt` unavailable — no CreatedAt/UpdatedAt on those gophercloud structs. TLS version min (`TLSVersions`) not yet a first-class check condition.
 
 ### 9. Barbican (`barbican` / key-manager) — Live (hygiene)
 
@@ -193,7 +192,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 The scaffolding tool provided within OSPA enables the generation of template checks for resources. However, it has some limitations:
 - Manual intervention is often required to customize templates for more complex resource relationships.
 - Composite/semantic checks are harder because they require consistent audit-model fields and cross-resource linking/identity (not just per-resource conditions).
-- Several scaffolded services remain **stubs** (Octavia, Manila, Trove, Senlin, Zaqar) — declared checks are not yet functional.
+- Several scaffolded services remain **stubs** (Senlin, Zaqar) — declared checks are not yet functional. Octavia/Manila/Trove are live.
 
 ## Key Gaps Across OSPA
 
@@ -206,7 +205,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 - Fixing drift is often higher ROI than new composite types.
 
 ### 3) Stub services undercut the guide narrative
-- Octavia / Manila / Trove / Senlin / Zaqar advertise hygiene checks that currently no-op. Treat “make live” as a prerequisite before semantic enhancements.
+- Senlin / Zaqar still advertise hygiene checks that currently no-op. Octavia/Manila/Trove are live.
 
 ### 4) Composite checks constrained by audit-model availability
 - Label honestly: Heat/Swift/Barbican usage fields, Magnum truncated templates, Manila encryption uncertainty, etc. Prefer “SDK has X but OSPA drops it” over “API cannot support X” when the SDK already exposes the field.
@@ -229,6 +228,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Public image + access scope | `public_image_cross_tenant_exposure` | DONE (#113) |
 | Failed stack + failed sub-resources | `failed_stack_root_cause` | DONE (#104/#114) |
 | DNS risky record exposure | `risky_dns_exposure` | DONE (#101) for record_type A/AAAA; zone composites still open |
+| World-open LB listener + insecure TLS/protocol | `insecure_public_listener` / `insecure_listener_tls` | DONE (#122) |
 
 ## Recommendations
 1. Adopt the gap philosophy: missing checks are gaps only when the audit-model/SDK supports them; otherwise label **API-audit model availability**. Prefer “OSPA truncates SDK field X” when that is the real blocker.
@@ -237,7 +237,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
    1. Fix declared-vs-implemented drift (`port_range_wide`, snapshot `encrypted` story, Ironic guide, `has_admin_role`)
    2. Neutron world exposure semantic naming + `shared_network_world_exposure`
    3. Keystone `password_expired`+MFA (AND/catalog) and finish `has_admin_role` → `high_privilege_no_mfa`
-   4. Un-stub Octavia/Manila/Trove (and model SDK TLS / `is_public` fields)
+   4. Un-stub Senlin/Zaqar; extend Octavia TLSVersions check if needed
    5. Barbican `secret_type` + Designate record-type checks (SDK-ready)
 4. Extend scaffolding so generated services are not left as permanent empty `Check()` stubs.
 5. Keep a cadence vs OpenStack Security Guide updates; compare guide allowed checks ↔ `ImplementedChecks()` ↔ composite catalog.

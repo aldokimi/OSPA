@@ -16,56 +16,7 @@ func emptyJobs() (<-chan discovery.Job, error) {
 	return ch, nil
 }
 
-// Octavia discoverers
-type OctaviaLoadBalancerDiscoverer struct{}
-
-func (d *OctaviaLoadBalancerDiscoverer) ResourceType() string { return "loadbalancer" }
-func (d *OctaviaLoadBalancerDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type OctaviaListenerDiscoverer struct{}
-
-func (d *OctaviaListenerDiscoverer) ResourceType() string { return "listener" }
-func (d *OctaviaListenerDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type OctaviaPoolDiscoverer struct{}
-
-func (d *OctaviaPoolDiscoverer) ResourceType() string { return "pool" }
-func (d *OctaviaPoolDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type OctaviaMemberDiscoverer struct{}
-
-func (d *OctaviaMemberDiscoverer) ResourceType() string { return "member" }
-func (d *OctaviaMemberDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type OctaviaHealthMonitorDiscoverer struct{}
-
-func (d *OctaviaHealthMonitorDiscoverer) ResourceType() string { return "healthmonitor" }
-func (d *OctaviaHealthMonitorDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
+// Octavia discoverers live in octavia.go.
 
 // Senlin discoverers
 type SenlinClusterDiscoverer struct{}
