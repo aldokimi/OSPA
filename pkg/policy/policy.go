@@ -140,6 +140,13 @@ type CheckConditions struct {
 
 	// RecordType matches DNS recordset type (A, AAAA, TXT, MX, CNAME, …).
 	RecordType string `yaml:"record_type,omitempty"`
+
+	// --- Ironic checks ---
+
+	// ConsoleEnabled matches nodes.Node.ConsoleEnabled.
+	ConsoleEnabled *bool `yaml:"console_enabled,omitempty"`
+	// BootInterface matches nodes.Node.BootInterface (e.g. pxe, ipxe, redfish-virtual-media).
+	BootInterface string `yaml:"boot_interface,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -233,6 +240,12 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.RecordType != "" {
 		used = append(used, "record_type")
+	}
+	if c.ConsoleEnabled != nil {
+		used = append(used, "console_enabled")
+	}
+	if c.BootInterface != "" {
+		used = append(used, "boot_interface")
 	}
 	return used
 }
