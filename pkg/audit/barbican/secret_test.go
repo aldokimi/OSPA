@@ -113,6 +113,28 @@ func TestSecretAuditor_Check_SecretTypeFilterMiss(t *testing.T) {
 	}
 }
 
+func TestSecretAuditor_Check_SecretRisk(t *testing.T) {
+	auditor := &SecretAuditor{}
+	s := secrets.Secret{
+		SecretRef:  "https://kms/v1/secrets/abc-123",
+		Name:       "key",
+		SecretType: "private",
+	}
+
+	rule := &policy.Rule{
+		Name:  "high-risk-secrets",
+		Check: policy.CheckConditions{SecretRisk: "high"},
+	}
+
+	result, err := auditor.Check(context.Background(), s, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for high-risk secret")
+	}
+}
+
 func TestSecretAuditor_Check_SecretTypeAlone(t *testing.T) {
 	auditor := &SecretAuditor{}
 	s := secrets.Secret{

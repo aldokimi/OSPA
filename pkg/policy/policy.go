@@ -141,6 +141,8 @@ type CheckConditions struct {
 
 	// SecretType matches Barbican secret_type (e.g. passphrase, private, certificate, opaque).
 	SecretType string `yaml:"secret_type,omitempty"`
+	// SecretRisk matches semantic risk class derived from secret_type (high, medium, low).
+	SecretRisk string `yaml:"secret_risk,omitempty"`
 
 	// --- Designate checks ---
 
@@ -255,6 +257,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.SecretType != "" {
 		used = append(used, "secret_type")
+	}
+	if c.SecretRisk != "" {
+		used = append(used, "secret_risk")
 	}
 	if c.RecordType != "" {
 		used = append(used, "record_type")

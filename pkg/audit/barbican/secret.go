@@ -25,7 +25,7 @@ func (a secretAdapter) GetUpdatedAt() time.Time { return a.s.Updated }
 
 // SecretAuditor audits barbican/secret resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names, secret_type
+// Allowed checks: status, age_gt, unused, exempt_names, secret_type, secret_risk
 // Allowed actions: log, delete, tag
 //
 // #100: when age_gt matches (optionally filtered by secret_type), observations
@@ -38,7 +38,7 @@ func (a *SecretAuditor) ResourceType() string {
 }
 
 func (a *SecretAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names", "secret_type"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "secret_type", "secret_risk"}
 }
 
 func (a *SecretAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -74,6 +74,42 @@ func (a *SecretAuditor) Check(ctx context.Context, resource interface{}, rule *p
 		rule.Check.Status == "" && rule.Check.AgeGT == "" && !rule.Check.Unused {
 		result.Compliant = false
 		result.Observation = fmt.Sprintf("secret_type=%s", s.SecretType)
+	}
+
+	riskHit := false
+	if rule.Check.SecretRisk != "" {
+		risk := classifySecretRisk(s.SecretType)
+		if !strings.EqualFold(risk, rule.Check.SecretRisk) {
+			// AND semantics: risk filter missed — clear other hits.
+			result.Compliant = true
+			result.Observation = ""
+			return result, nil
+		}
+		riskHit = true
+		if result.Compliant {
+			result.Compliant = false
+			result.Observation = fmt.Sprintf("secret_risk=%s (secret_type=%s)", risk, s.SecretType)
+		}
+	}
+
+	// #119 catalog outcome: high-risk stale material (extends #100).
+	if !result.Compliant && rule.Check.AgeGT != "" && (riskHit || classifySecretRisk(s.SecretType) == "high") {
+		ts := s.Updated
+		if ts.IsZero() {
+			ts = s.Created
+		}
+		typeLabel := s.SecretType
+		if typeLabel == "" {
+			typeLabel = "unknown"
+		}
+		risk := classifySecretRisk(s.SecretType)
+		if risk == "high" || rule.Check.SecretRisk != "" {
+			result.Observation = fmt.Sprintf(
+				"high_risk_stale_secret: secret_risk=%q secret_type=%q older than %s (last updated: %s; no rotation metadata in API)",
+				risk, typeLabel, rule.Check.AgeGT, ts.Format(time.RFC3339),
+			)
+			return result, nil
+		}
 	}
 
 	// #100 semantic outcome: age-based freshness risk (no rotation metadata in API).
