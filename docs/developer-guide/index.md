@@ -64,6 +64,14 @@ OSPA follows a plugin-based architecture that makes it easy to extend:
 
     [→ Testing Guide](testing.md)
 
+- **Testing Plan**
+
+    ---
+
+    Full quality gates, maturity matrix, CI, and release checklist.
+
+    [→ Testing Plan](testing-plan.md)
+
 - **Troubleshooting**
 
     ---

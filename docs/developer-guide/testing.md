@@ -2,6 +2,8 @@
 
 This guide covers OSPA's testing strategy, including unit tests, integration tests, and end-to-end tests.
 
+For release quality gates, service maturity, CI recommendations, and checklists, see the [Full Testing Plan](testing-plan.md).
+
 ## Test Types
 
 | Type | Location | Purpose | Requires OpenStack |
