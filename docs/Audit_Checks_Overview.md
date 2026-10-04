@@ -121,6 +121,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Existing Checks (implemented):** hygiene only (`status/age_gt/unused/exempt_names` as declared)
 - **Gaps / enhancements (verified):**
   - **DONE (#100):** `secret_type` atomic check + `stale_secret_material` semantic observation when `age_gt` matches (optionally filtered by type). Freshness uses Updated/Created — API has no rotation field.
+  - **DONE (#119):** `secret_risk` classification (high/medium/low from secret_type) + composite `high_risk_stale_secret`.
   - **PARTIAL (#119):** richer type→risk classification (algorithm/content-types) and usage/policy pairing still open.
   - **REAL (API-audit model):** no dedicated “last rotated” field.
 
