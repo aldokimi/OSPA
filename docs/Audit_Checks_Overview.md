@@ -135,13 +135,13 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - **REAL (missed implementable once live):** `is_public` / share visibility posture.
   - **PARTIAL / availability:** dedicated encryption-at-rest/in-transit fields are not clearly exposed on the share struct — confirm API before promising encryption composites.
 
-### 11. Trove (`trove` / database) — Stub
+### 11. Trove (`trove` / database) — Live
 
 - **Supported Resources:** `instance`, `cluster`, `backup`, `datastore`
-- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Existing Checks (implemented):** hygiene via real discovery/auditors; backup `age_gt` emits `backup_retention_exceeded` (#121)
 - **Gaps / enhancements (verified):**
-  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
-  - **REAL:** backup retention/compliance beyond `age_gt`; TLS/transport posture only if audit model gains TLS/cert metadata.
+  - **DONE (#121):** un-stubbed discovery + auditors; retention via `age_gt` / `backup_retention_exceeded`.
+  - **REAL (API-audit model):** TLS/transport posture not on instance payload — needs config-group/cert metadata.
 
 ### 12. Magnum (`magnum` / container-infra) — Live (truncated discovery)
 

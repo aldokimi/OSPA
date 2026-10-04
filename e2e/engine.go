@@ -204,7 +204,7 @@ func (e *TestEngine) GetTroveClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetTroveClient()
 	if err != nil {
-		t.Fatalf("Failed to get trove client: %v", err)
+		skipOrFail(t, "trove", err)
 	}
 	return client
 }

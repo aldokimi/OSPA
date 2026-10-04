@@ -108,46 +108,7 @@ func (d *SenlinPolicyDiscoverer) Discover(ctx context.Context, client *gopherclo
 	return emptyJobs()
 }
 
-// Trove discoverers
-type TroveInstanceDiscoverer struct{}
-
-func (d *TroveInstanceDiscoverer) ResourceType() string { return "instance" }
-func (d *TroveInstanceDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type TroveClusterDiscoverer struct{}
-
-func (d *TroveClusterDiscoverer) ResourceType() string { return "cluster" }
-func (d *TroveClusterDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type TroveBackupDiscoverer struct{}
-
-func (d *TroveBackupDiscoverer) ResourceType() string { return "backup" }
-func (d *TroveBackupDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
-
-type TroveDatastoreDiscoverer struct{}
-
-func (d *TroveDatastoreDiscoverer) ResourceType() string { return "datastore" }
-func (d *TroveDatastoreDiscoverer) Discover(ctx context.Context, client *gophercloud.ServiceClient, allTenants bool) (<-chan discovery.Job, error) {
-	_ = ctx
-	_ = client
-	_ = allTenants
-	return emptyJobs()
-}
+// Trove discoverers live in trove.go.
 
 // Zaqar discoverers
 type ZaqarQueueDiscoverer struct{}
