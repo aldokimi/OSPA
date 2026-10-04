@@ -218,7 +218,7 @@ func (d *HeatSnapshotDiscoverer) Discover(ctx context.Context, client *gopherclo
 			if err != nil {
 				continue
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			var parsed struct {
 				Snapshots []struct {

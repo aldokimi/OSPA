@@ -48,6 +48,18 @@ graph TB
     Orchestrator --> Metrics
 ```
 
+## Web UI
+
+**Location:** `cmd/server/`, with supporting packages `pkg/cloudprofile/`, `pkg/inventory/`, `pkg/dashboard/`, `pkg/runner/`, `pkg/runstore/`
+
+The HTMX UI reuses the same discovery/audit stack as the CLI agent, but authentication is gated by **profiles**:
+
+- Remote profiles call `auth.NewSessionFromCredentials`
+- Local profiles call `auth.NewSession(cloudName)` only after explicit Connect + consent
+- Dashboard inventory and runs use the live session; there is no default `OS_CLOUD` selection
+
+User-facing docs: [Web UI](../user-guide/web-ui.md).
+
 ## Components
 
 ### 1. Service Layer
@@ -209,7 +221,18 @@ The orchestrator coordinates the entire audit process:
 - Populates severity, category, and guide_ref classification on results
 - Handles graceful shutdown
 
-### 6. Remediation
+### 6. Authentication
+
+**Location:** `pkg/auth/`
+
+| Entry point | Use |
+|-------------|-----|
+| `NewSession(cloudName)` | CLI and opt-in local UI profiles (`clouds.yaml`) |
+| `NewSessionFromCredentials(...)` | UI remote profiles (explicit Keystone fields) |
+
+`Session.Opts` carries `clientconfig.ClientOpts` so service clients work for both clouds.yaml and explicit auth.
+
+### 7. Remediation
 
 **Location:** `pkg/remediate/`
 

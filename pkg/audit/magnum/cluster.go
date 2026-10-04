@@ -84,7 +84,7 @@ func (a *ClusterAuditor) Fix(ctx context.Context, client interface{}, resource i
 		if err != nil {
 			return fmt.Errorf("deleting cluster %s: %w", cluster.Name, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil
 
 	default:

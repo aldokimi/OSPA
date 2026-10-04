@@ -1,0 +1,23 @@
+{{define "home"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Audit without living in the CLI</h1>
+      <p class="muted">Start dry-run audits, inspect findings live, and validate policies from a path or paste. Remediation stays off unless you explicitly enable apply.</p>
+      <div class="row" style="margin-top:1rem">
+        <a class="btn" href="/runs">Start a run</a>
+        <a class="btn secondary" href="/policies">Open policy studio</a>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Recent runs</h2>
+      {{template "runs_table" .Runs}}
+    </section>
+  </div>
+</body>
+</html>
+{{end}}

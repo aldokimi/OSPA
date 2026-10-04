@@ -36,7 +36,8 @@ Expand support to all major OpenStack services:
 
 #### Improved User Experience
 
-- **Web dashboard** - Visual interface for viewing findings and writing policies
+- **Web UI (available)** - Go + HTMX UI (`cmd/server`): cloud **profiles** (remote credentials or opt-in local `clouds.yaml`), dashboard inventory, runs with live findings, Policy Studio. No UI login in v1; the UI does **not** auto-connect to local clouds — Connect requires explicit consent. See [Web UI](../user-guide/web-ui.md).
+- **UI authentication** - Optional login / reverse-proxy integration for multi-user deployments
 - **Better error messages** - More helpful validation errors
 - **Policy linting** - Catch common mistakes before runtime
 

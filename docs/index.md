@@ -85,6 +85,7 @@ go run ./cmd/agent --cloud mycloud --policy policy.yaml --out findings.json
 | **Concurrent Discovery** | Fast parallel resource enumeration |
 | **Flexible Policies** | YAML-based with status, age, and custom checks |
 | **Safe by Default** | Audit mode only; remediation requires `--fix` |
+| **Web UI** | Profiles, dashboard, runs, and Policy Studio (`cmd/server`) |
 | **Extensible** | Add services via scaffold tool |
 | **Multiple Output Formats** | JSON, CSV |
 | **Prometheus Metrics** | Built-in metrics endpoint |
@@ -140,6 +141,14 @@ graph LR
     Run your first audit in 5 minutes.
 
     [→ Quick Start](getting-started/quickstart.md)
+
+- **Web UI**
+
+    ---
+
+    Connect clouds via profiles, browse inventory, and edit policies in the browser.
+
+    [→ Web UI](user-guide/web-ui.md)
 
 </div>
 

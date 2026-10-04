@@ -92,6 +92,20 @@ Example output:
 }
 ```
 
+## Optional: Use the Web UI
+
+Prefer a browser? Start the UI and connect a profile (nothing auto-connects to local clouds):
+
+```bash
+go run ./cmd/server --listen :8080
+```
+
+1. Open [http://localhost:8080/profiles](http://localhost:8080/profiles)
+2. Add a **remote** profile, or opt in to a **local** `clouds.yaml` entry
+3. Click **Connect**, then use Dashboard / Runs / Policies
+
+See [Web UI](../user-guide/web-ui.md) for details.
+
 ## What's Next?
 
 Now that you've run your first audit:
@@ -106,6 +120,13 @@ Now that you've run your first audit:
 
     [→ Writing Policies](../user-guide/policies.md)
 
+-  **Web UI**
+
+    ---
+
+    Profiles, dashboard inventory, and Policy Studio.
+
+    [→ Web UI](../user-guide/web-ui.md)
 
 </div>
 

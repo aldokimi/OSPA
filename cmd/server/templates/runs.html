@@ -1,0 +1,32 @@
+{{define "runs"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Runs</h1>
+      <p class="muted">Launch an audit against the connected profile. Default is dry-run.</p>
+      {{template "connection_banner" .}}
+      <form class="row" style="margin-top:1rem" method="post" action="/runs">
+        <div class="field" style="flex:2">
+          <label for="policy_path">Policy path</label>
+          <input id="policy_path" name="policy_path" type="text" placeholder="./examples/policies.yaml" value="{{.DefaultPolicy}}">
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" name="all_tenants" value="1"> All tenants</label>
+          <label><input type="checkbox" name="apply" value="1"> Apply remediations</label>
+        </div>
+        <button type="submit" {{if not .Connected}}disabled{{end}}>Start run</button>
+      </form>
+      <p class="muted" style="margin-top:0.75rem">Or paste YAML on the <a href="/policies">Policies</a> page and start from there.</p>
+    </section>
+    <section class="panel">
+      <h2>History</h2>
+      {{template "runs_table" .Runs}}
+    </section>
+  </div>
+</body>
+</html>
+{{end}}

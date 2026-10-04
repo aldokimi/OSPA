@@ -55,7 +55,8 @@ type Finding struct {
 	RemediationSkipReason string `json:"remediation_skip_reason,omitempty"`
 }
 
-func (w *JSONWriter) WriteResult(r *audit.Result) error {
+// FindingFromResult converts an audit result into a serializable finding.
+func FindingFromResult(r *audit.Result) Finding {
 	f := Finding{
 		RuleID:                r.RuleID,
 		ResourceID:            r.ResourceID,
@@ -77,6 +78,7 @@ func (w *JSONWriter) WriteResult(r *audit.Result) error {
 		f.Action = r.Rule.Action
 		f.ResourceType = r.Rule.Resource
 		f.Service = r.Rule.Service
+		f.RecommendedAction = r.Rule.Action
 	}
 
 	if !r.UpdatedAt.IsZero() {
@@ -94,7 +96,11 @@ func (w *JSONWriter) WriteResult(r *audit.Result) error {
 			f.RemediationErrorKind = string(r.RemediationErrorKind)
 		}
 	}
-	return w.enc.Encode(f)
+	return f
+}
+
+func (w *JSONWriter) WriteResult(r *audit.Result) error {
+	return w.enc.Encode(FindingFromResult(r))
 }
 
 func (w *JSONWriter) Close() error {

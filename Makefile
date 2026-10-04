@@ -1,4 +1,4 @@
-.PHONY: scaffold help
+.PHONY: scaffold help build server test test-e2e
 
 help:
 	@echo "OSPA Makefile"
@@ -24,6 +24,10 @@ scaffold:
 
 build:
 	go build -o bin/ospa-agent ./cmd/agent
+	go build -o bin/ospa-server ./cmd/server
+
+server:
+	go run ./cmd/server --listen :8080 --default-policy examples/policies.yaml
 
 test:
 	go test ./...

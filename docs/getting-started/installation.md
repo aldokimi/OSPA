@@ -29,6 +29,9 @@ go mod download
 # Build the agent
 go build -o ospa ./cmd/agent
 
+# Build the Web UI (optional)
+go build -o ospa-ui ./cmd/server
+
 # Build the scaffold tool (optional)
 go build -o ospa-scaffold ./cmd/scaffold
 ```
@@ -38,6 +41,9 @@ go build -o ospa-scaffold ./cmd/scaffold
 ```bash
 # Check the agent
 ./ospa --help
+
+# Start the Web UI (optional)
+./ospa-ui --listen :8080
 
 # Run unit tests
 go test ./...
@@ -51,10 +57,12 @@ After cloning, you'll see:
 OSPA/
 ├── cmd/
 │   ├── agent/          # Main agent CLI
+│   ├── server/         # Web UI (HTMX)
 │   └── scaffold/       # Code generation tool
 ├── pkg/
 │   ├── audit/          # Auditor implementations
 │   ├── auth/           # OpenStack authentication
+│   ├── cloudprofile/   # UI cloud profile store
 │   ├── discovery/      # Resource discovery
 │   ├── orchestrator/   # Worker coordination
 │   ├── policy/         # Policy loading and validation
@@ -75,6 +83,7 @@ cd OSPA
 git pull origin main
 go mod download
 go build -o ospa ./cmd/agent
+go build -o ospa-ui ./cmd/server
 ```
 
 ## Troubleshooting
@@ -116,6 +125,6 @@ go mod tidy
 
 After installation:
 
-1. [Configure your OpenStack credentials](configuration.md)
+1. [Configure your OpenStack credentials](configuration.md) (CLI) or use [Web UI profiles](../user-guide/web-ui.md)
 2. [Run your first audit](quickstart.md)
 

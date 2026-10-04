@@ -80,6 +80,7 @@ OSPA follows a plugin-based architecture that makes it easy to extend:
 OSPA/
 ├── cmd/
 │   ├── agent/              # Main CLI agent
+│   ├── server/             # Web UI (HTMX templates + handlers)
 │   └── scaffold/           # Code generation tool
 ├── pkg/
 │   ├── audit/              # Auditor implementations
@@ -87,10 +88,13 @@ OSPA/
 │   │   ├── nova/           # Nova auditors
 │   │   ├── neutron/        # Neutron auditors
 │   │   └── cinder/         # Cinder auditors
-│   ├── auth/               # OpenStack authentication
+│   ├── auth/               # OpenStack authentication (clouds.yaml + explicit creds)
+│   ├── cloudprofile/       # Persisted UI cloud profiles
+│   ├── dashboard/          # Dashboard stats from inventory + runs
 │   ├── discovery/          # Resource discovery
 │   │   ├── interface.go    # Discoverer interface
 │   │   └── services/       # Service discoverers
+│   ├── inventory/          # Cluster inventory scans (UI dashboard)
 │   ├── orchestrator/       # Worker coordination
 │   ├── policy/             # Policy loading and validation
 │   │   ├── policy.go       # Policy structures
@@ -98,6 +102,8 @@ OSPA/
 │   │   └── validation/     # Service validators
 │   ├── remediate/          # Remediation actions
 │   ├── report/             # Output formatting
+│   ├── runner/             # Shared audit run entry (CLI + UI)
+│   ├── runstore/           # In-memory UI run history
 │   └── services/           # Service registry
 │       ├── interface.go    # Service interface
 │       ├── registry.go     # Service registry

@@ -24,6 +24,9 @@ go mod download
 # Build the agent
 go build -o ospa ./cmd/agent
 
+# Build the Web UI
+go build -o ospa-ui ./cmd/server
+
 # Build the scaffold tool
 go build -o ospa-scaffold ./cmd/scaffold
 ```
@@ -36,6 +39,9 @@ go test ./...
 
 # Check the agent works
 ./ospa --help
+
+# Check the Web UI starts (Ctrl+C to stop)
+./ospa-ui --listen :8080
 
 # Check the scaffold tool works
 ./ospa-scaffold --help
@@ -109,20 +115,21 @@ export PATH=$PATH:$GOPATH/bin
 
 ```
 OSPA/
-├── cmd/                    # CLI applications
-│   ├── agent/              # Main agent
-│   │   └── main.go
+├── cmd/                    # Applications
+│   ├── agent/              # Main CLI agent
+│   ├── server/             # Web UI
 │   └── scaffold/           # Code generator
-│       ├── main.go
-│       └── internal/
 ├── pkg/                    # Library code
 │   ├── audit/              # Auditors
 │   ├── auth/               # Authentication
+│   ├── cloudprofile/       # UI cloud profiles
 │   ├── discovery/          # Discoverers
+│   ├── inventory/          # UI inventory scans
 │   ├── orchestrator/       # Coordination
 │   ├── policy/             # Policy handling
 │   ├── remediate/          # Actions
 │   ├── report/             # Output
+│   ├── runner/             # Shared audit runs
 │   └── services/           # Service registry
 ├── e2e/                    # End-to-end tests
 ├── examples/               # Example policies
@@ -143,6 +150,14 @@ go run ./cmd/agent --cloud mycloud --policy examples/policies.yaml --out finding
 # Using binary
 ./ospa --cloud mycloud --policy examples/policies.yaml --out findings.json
 ```
+
+### Running the Web UI
+
+```bash
+go run ./cmd/server --listen :8080 --default-policy examples/policies.yaml
+```
+
+Connect a profile in the browser before dashboard/runs hit OpenStack. See [Web UI](../user-guide/web-ui.md).
 
 ### Running Tests
 

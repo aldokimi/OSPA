@@ -1,0 +1,41 @@
+{{define "run_detail"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Run <span class="mono">{{.Run.ID}}</span></h1>
+      <p class="muted">
+        Cloud <strong>{{.Run.Cloud}}</strong>
+        {{if .Run.PolicyPath}} · Policy <span class="mono">{{.Run.PolicyPath}}</span>{{end}}
+        · <span class="badge run">{{.Run.Status}}</span>
+        {{if .Run.Apply}} · <span class="badge danger">apply</span>{{end}}
+      </p>
+      {{if .Run.Error}}<div class="flash err">{{.Run.Error}}</div>{{end}}
+      <div id="summary"
+           hx-get="/runs/{{.Run.ID}}/summary"
+           hx-trigger="load, every 1s"
+           hx-swap="innerHTML">
+        {{template "summary" .Run}}
+      </div>
+      {{if or (eq .Run.Status "queued") (eq .Run.Status "running")}}
+      <form method="post" action="/runs/{{.Run.ID}}/cancel" style="margin-top:0.75rem">
+        <button class="secondary" type="submit">Cancel</button>
+      </form>
+      {{end}}
+    </section>
+    <section class="panel">
+      <h2>Findings</h2>
+      <div id="findings"
+           hx-get="/runs/{{.Run.ID}}/findings"
+           hx-trigger="load, every 1s"
+           hx-swap="innerHTML">
+        {{template "findings_table" .Run.Findings}}
+      </div>
+    </section>
+  </div>
+</body>
+</html>
+{{end}}

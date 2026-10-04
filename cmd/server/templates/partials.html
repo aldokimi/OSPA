@@ -1,0 +1,102 @@
+{{define "head"}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · OSPA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app.css">
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+{{end}}
+
+{{define "nav"}}
+<header class="top">
+  <a class="brand" href="/">OSPA <span>UI</span></a>
+  <nav class="nav">
+    <a href="/" {{if eq .Nav "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
+    <a href="/runs" {{if eq .Nav "runs"}}aria-current="page"{{end}}>Runs</a>
+    <a href="/policies" {{if eq .Nav "policies"}}aria-current="page"{{end}}>Policies</a>
+    <a href="/profiles" {{if eq .Nav "profiles"}}aria-current="page"{{end}}>Profiles</a>
+    <a href="/catalog" {{if eq .Nav "catalog"}}aria-current="page"{{end}}>Catalog</a>
+  </nav>
+</header>
+{{end}}
+
+{{define "connection_banner"}}
+{{if .Connected}}
+<div class="flash ok">Connected to <strong>{{.ConnectedName}}</strong>{{if .ConnectedSrc}} <span class="muted">({{.ConnectedSrc}})</span>{{end}} · <a href="/profiles">manage</a></div>
+{{else}}
+<div class="flash err">No cloud connected. <a href="/profiles">Open Profiles</a> to connect a remote cloud or grant permission for a local <span class="mono">clouds.yaml</span> entry.</div>
+{{end}}
+{{end}}
+
+{{define "runs_table"}}
+{{if .}}
+<table>
+  <thead>
+    <tr><th>ID</th><th>Cloud</th><th>Status</th><th>Violations</th><th>Created</th></tr>
+  </thead>
+  <tbody>
+  {{range .}}
+    <tr>
+      <td><a class="mono" href="/runs/{{.ID}}">{{.ID}}</a></td>
+      <td>{{.Cloud}}</td>
+      <td><span class="badge run">{{.Status}}</span></td>
+      <td>{{.Summary.Violations}}</td>
+      <td class="mono">{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="muted">No runs yet.</p>
+{{end}}
+{{end}}
+
+{{define "summary"}}
+<div class="stats">
+  <div class="stat"><span class="muted">Status</span><b>{{.Status}}</b></div>
+  <div class="stat"><span class="muted">Scanned</span><b>{{.Summary.Scanned}}</b></div>
+  <div class="stat"><span class="muted">Violations</span><b>{{.Summary.Violations}}</b></div>
+  <div class="stat"><span class="muted">Errors</span><b>{{.Summary.Errors}}</b></div>
+  <div class="stat"><span class="muted">Written</span><b>{{.Summary.Written}}</b></div>
+</div>
+{{end}}
+
+{{define "findings_table"}}
+{{if .}}
+<table>
+  <thead>
+    <tr><th>Service</th><th>Resource</th><th>Rule</th><th>Severity</th><th>Observation</th></tr>
+  </thead>
+  <tbody>
+  {{range .}}
+    <tr>
+      <td class="mono">{{.Service}}</td>
+      <td>
+        <div class="mono">{{.ResourceType}}</div>
+        <div class="muted mono">{{.ResourceName}} {{.ResourceID}}</div>
+      </td>
+      <td class="mono">{{.RuleID}}</td>
+      <td>
+        {{if eq .Severity "critical"}}<span class="badge danger">{{.Severity}}</span>
+        {{else if eq .Severity "high"}}<span class="badge warn">{{.Severity}}</span>
+        {{else}}<span class="badge">{{if .Severity}}{{.Severity}}{{else}}n/a{{end}}</span>{{end}}
+      </td>
+      <td>{{.Observation}}{{if .Error}} <span class="badge danger">{{.Error}}</span>{{end}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="muted">No findings yet.</p>
+{{end}}
+{{end}}
+
+{{define "validate_ok"}}
+<div class="flash ok">Policy valid · {{.Rules}} rules · {{.Composites}} composites</div>
+{{end}}
+
+{{define "validate_err"}}
+<div class="flash err">{{.}}</div>
+{{end}}

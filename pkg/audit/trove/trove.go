@@ -175,7 +175,7 @@ func (a *BackupAuditor) Fix(ctx context.Context, client interface{}, resource in
 		if err != nil {
 			return fmt.Errorf("deleting trove backup %s: %w", b.ID, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil
 	}
 	return fmt.Errorf("trove/backup: action %q not implemented", rule.Action)

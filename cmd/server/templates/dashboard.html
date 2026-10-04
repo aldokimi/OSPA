@@ -1,0 +1,192 @@
+{{define "dashboard"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Cluster &amp; management dashboard</h1>
+      <p class="muted">Live inventory of the OpenStack cloud beside what OSPA already covers — and what it could.</p>
+      {{template "connection_banner" .}}
+      <form class="row" style="margin-top:1rem" method="get" action="/">
+        <div class="field" style="flex:2">
+          <label for="policy">Policy path</label>
+          <input id="policy" name="policy" type="text" value="{{.PolicyPath}}">
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" name="all_tenants" value="1" {{if .AllTenants}}checked{{end}}> All tenants</label>
+          <label><input type="checkbox" name="refresh" value="1"> Force rescan</label>
+        </div>
+        <button type="submit" {{if not .Connected}}disabled{{end}}>Refresh</button>
+      </form>
+    </section>
+    {{template "dashboard_stats" .Stats}}
+  </div>
+</body>
+</html>
+{{end}}
+
+{{define "dashboard_body"}}
+{{template "dashboard_stats" .Stats}}
+{{end}}
+
+{{define "dashboard_stats"}}
+<section class="panel">
+  <h2>Key metrics</h2>
+  <div class="stats">
+    <div class="stat"><span class="muted">Resources in cloud</span><b>{{if .Inventory}}{{.Inventory.Total}}{{else}}—{{end}}</b></div>
+    <div class="stat"><span class="muted">Services reachable</span><b>{{if .Inventory}}{{.Inventory.ServicesOK}}{{else}}—{{end}}</b></div>
+    <div class="stat"><span class="muted">Policy coverage</span><b>{{.KPICoveragePct}}%</b></div>
+    <div class="stat"><span class="muted">Unmanaged instances</span><b>{{.UnmanagedCount}}</b></div>
+    <div class="stat"><span class="muted">Last-run findings</span><b>{{.LastRunFindings}}</b></div>
+    <div class="stat"><span class="muted">Remediable findings</span><b>{{.RemediableFindings}}</b></div>
+    <div class="stat"><span class="muted">Violation rate</span><b>{{.KPIViolationRate}}%</b></div>
+    <div class="stat"><span class="muted">OSPA catalog types</span><b>{{.CatalogResources}}</b></div>
+  </div>
+  {{if .InventoryError}}<div class="flash err" style="margin-top:0.75rem">{{.InventoryError}}</div>{{end}}
+  {{if .Inventory}}
+  <p class="muted" style="margin-top:0.75rem">
+    Scan of <strong>{{.Cloud}}</strong> at {{.Inventory.TakenAt.Format "15:04:05"}} UTC
+    · {{.Inventory.DurationMS}}ms
+    · policy <span class="mono">{{.PolicyPath}}</span>
+    · {{.PolicyRules}} rules / {{.PolicyComposites}} composites
+  </p>
+  {{end}}
+</section>
+
+<section class="panel">
+  <h2>How OSPA manages this cloud</h2>
+  <p class="muted">
+    <span class="badge ok">managed</span> in policy + present ·
+    <span class="badge warn">unmanaged</span> present, no policy ·
+    <span class="badge">absent</span> in policy, zero in cloud ·
+    <span class="badge danger">unreachable</span> client/discovery failed
+  </p>
+  <div class="stats" style="margin:0.75rem 0 1rem">
+    <div class="stat"><span class="muted">Managed types</span><b>{{.ManagedTypes}}</b></div>
+    <div class="stat"><span class="muted">Unmanaged types</span><b>{{.UnmanagedInCloud}}</b></div>
+    <div class="stat"><span class="muted">Policy-only (absent)</span><b>{{.AbsentManagedTypes}}</b></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th><th>Resource</th><th>In cloud</th><th>Policy rules</th><th>Last findings</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Coverage}}
+      {{if or (gt .InCloud 0) .InPolicy (ne .CloudError "")}}
+      <tr>
+        <td class="mono">{{.Service}}</td>
+        <td class="mono">{{.ResourceType}}</td>
+        <td>
+          <div class="bar-row">
+            <div class="bar"><i style="width:{{.BarPct}}%"></i></div>
+            <span class="mono">{{.InCloud}}</span>
+          </div>
+          {{if .CloudError}}<div class="muted" style="font-size:0.75rem">{{.CloudError}}</div>{{end}}
+        </td>
+        <td class="mono">{{.PolicyRules}}</td>
+        <td class="mono">{{.LastFindings}}</td>
+        <td>
+          {{if eq .Status "managed"}}<span class="badge ok">{{.StatusLabel}}</span>
+          {{else if eq .Status "unmanaged"}}<span class="badge warn">{{.StatusLabel}}</span>
+          {{else if eq .Status "unreachable"}}<span class="badge danger">{{.StatusLabel}}</span>
+          {{else}}<span class="badge">{{.StatusLabel}}</span>{{end}}
+        </td>
+      </tr>
+      {{end}}
+    {{else}}
+      <tr><td colspan="6" class="muted">No inventory yet — connect a profile and refresh.</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="grid-2">
+  <section class="panel">
+    <h2>Cluster inventory</h2>
+    {{if .InventoryBars}}
+      {{range .InventoryBars}}
+      <div class="bar-row labeled">
+        <span class="label mono">{{.Label}}</span>
+        <div class="bar accent"><i style="width:{{.Pct}}%"></i></div>
+        <span class="mono">{{.Count}}</span>
+      </div>
+      {{end}}
+    {{else}}
+      <p class="muted">Inventory unavailable or empty.</p>
+    {{end}}
+  </section>
+
+  <section class="panel">
+    <h2>Could manage next</h2>
+    <p class="muted">In the cloud with OSPA auditors, but no matching policy rules.</p>
+    <ul class="reco">
+    {{range .Coverage}}
+      {{if eq .Status "unmanaged"}}
+      <li>
+        <strong class="mono">{{.Service}}/{{.ResourceType}}</strong>
+        — {{.InCloud}} instance{{if ne .InCloud 1}}s{{end}}
+        · <a href="/policies">add policy rules</a>
+      </li>
+      {{end}}
+    {{end}}
+    </ul>
+    {{if eq .UnmanagedInCloud 0}}
+    <p class="muted">No unmanaged in-cloud types detected.</p>
+    {{end}}
+  </section>
+</section>
+
+<section class="grid-2">
+  <section class="panel">
+    <h2>Findings by severity</h2>
+    {{if .BySeverity}}
+      {{range .BySeverity}}
+      <div class="bar-row labeled">
+        <span class="label mono">{{.Label}}</span>
+        <div class="bar"><i style="width:{{.Pct}}%"></i></div>
+        <span class="mono">{{.Count}}</span>
+      </div>
+      {{end}}
+    {{else}}
+      <p class="muted">No completed run findings yet. <a href="/runs">Start a run</a>.</p>
+    {{end}}
+  </section>
+  <section class="panel">
+    <h2>Findings by service</h2>
+    {{if .ByService}}
+      {{range .ByService}}
+      <div class="bar-row labeled">
+        <span class="label mono">{{.Label}}</span>
+        <div class="bar accent"><i style="width:{{.Pct}}%"></i></div>
+        <span class="mono">{{.Count}}</span>
+      </div>
+      {{end}}
+    {{else}}
+      <p class="muted">No completed run findings yet.</p>
+    {{end}}
+  </section>
+</section>
+
+<section class="panel">
+  <h2>Findings by category</h2>
+  {{if .ByCategory}}
+    <div class="chip-row">
+    {{range .ByCategory}}
+      <span class="chip">{{.Label}} <b>{{.Count}}</b></span>
+    {{end}}
+    </div>
+  {{else}}
+    <p class="muted">Categories appear after a completed audit run.</p>
+  {{end}}
+  {{if .LastRun}}
+  <p class="muted" style="margin-top:0.75rem">
+    Based on run <a class="mono" href="/runs/{{.LastRun.ID}}">{{.LastRun.ID}}</a>
+    · scanned {{.LastRun.Summary.Scanned}} · violations {{.LastRun.Summary.Violations}}
+  </p>
+  {{end}}
+</section>
+{{end}}

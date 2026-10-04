@@ -30,6 +30,14 @@ OSPA operates in two modes:
 
     [→ Running](running.md)
 
+- **Web UI**
+
+    ---
+
+    Browser UI with cloud profiles, dashboard, runs, and Policy Studio.
+
+    [→ Web UI](web-ui.md)
+
 - **Output Formats**
 
     ---

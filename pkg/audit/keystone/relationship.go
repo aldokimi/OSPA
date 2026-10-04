@@ -55,7 +55,7 @@ func listGroupUsers(ctx context.Context, groupID string) ([]users.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var payload struct {
 		Users []users.User `json:"users"`

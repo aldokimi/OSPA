@@ -68,6 +68,27 @@ go run ./cmd/agent \
 
 ---
 
+## Server Command (Web UI)
+
+Browser UI for profiles, dashboard, runs, and Policy Studio.
+
+```bash
+go run ./cmd/server [flags]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--listen` | `:8080` | HTTP listen address |
+| `--default-policy` | `examples/policies.yaml` | Default policy path shown in the UI |
+
+```bash
+go run ./cmd/server --listen :8080
+```
+
+OpenStack access in the UI is via **Profiles** (explicit Connect). The server does not auto-select `OS_CLOUD` or connect to local `clouds.yaml`. See [Web UI](../user-guide/web-ui.md).
+
+---
+
 ## Scaffold Command
 
 Generates boilerplate code for new services and resources.

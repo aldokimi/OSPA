@@ -7,13 +7,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Load reads and parses a policy YAML file
+// Load reads and parses a policy YAML file.
 func Load(path string) (*Policy, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read policy file: %w", err)
 	}
+	return LoadBytes(b)
+}
 
+// LoadBytes parses policy YAML from memory (paste/upload).
+func LoadBytes(b []byte) (*Policy, error) {
 	// First, unmarshal into a map to handle the service-keyed structure
 	var raw map[string]interface{}
 	if err := yaml.Unmarshal(b, &raw); err != nil {

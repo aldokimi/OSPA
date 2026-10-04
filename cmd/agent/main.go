@@ -1,20 +1,22 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"runtime"
 	"strings"
+	"syscall"
 
-	"github.com/OpenStack-Policy-Agent/OSPA/pkg/auth"
 	_ "github.com/OpenStack-Policy-Agent/OSPA/pkg/discovery/services" // Register discoverers
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/metrics"
-	"github.com/OpenStack-Policy-Agent/OSPA/pkg/orchestrator"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/report"
+	"github.com/OpenStack-Policy-Agent/OSPA/pkg/runner"
 	_ "github.com/OpenStack-Policy-Agent/OSPA/pkg/services"          // Register services
 	_ "github.com/OpenStack-Policy-Agent/OSPA/pkg/services/services" // Register service implementations
 )
@@ -25,7 +27,7 @@ func main() {
 	outPath := flag.String("out", "", "Write findings to this file (default: policy defaults.output if set)")
 	outFormat := flag.String("out-format", "json", "Output format: json, csv")
 	workers := flag.Int("workers", runtime.NumCPU()*8, "Number of concurrent workers")
-	fix := flag.Bool("fix", false, "Apply remediations for enforce-mode rules (default: false, dry-run)")
+	apply := flag.Bool("fix", false, "Apply remediations for enforce-mode rules (default: false, dry-run)")
 	allTenants := flag.Bool("all-tenants", false, "Scan all tenants/projects (requires admin). Default: false")
 	jobsBuffer := flag.Int("jobs-buffer", 1000, "Jobs channel buffer size")
 	resultsBuffer := flag.Int("results-buffer", 100, "Results channel buffer size")
@@ -41,20 +43,11 @@ func main() {
 	if *cloudName == "" {
 		log.Fatal("Error: Please provide a cloud name via --cloud or OS_CLOUD env var")
 	}
-
 	if *policyPath == "" {
 		log.Fatal("Error: Please provide a policy file via --policy")
 	}
 
 	configureLogger(*logLevel, *logFormat)
-
-	fmt.Printf("Initializing Session for cloud: %q...\n", *cloudName)
-
-	session, err := auth.NewSession(*cloudName)
-	if err != nil {
-		log.Fatalf("Authentication failed: %v", err)
-	}
-	fmt.Println("Authentication successful!")
 
 	fmt.Printf("Loading policy from %q...\n", *policyPath)
 	p, err := policy.Load(*policyPath)
@@ -63,16 +56,12 @@ func main() {
 	}
 	fmt.Printf("Policy loaded: %d service policies\n", len(p.Policies))
 
-	workersCount := p.EffectiveWorkers(*workers)
-	fmt.Printf("Using %d workers\n", workersCount)
-
 	if *outPath == "" && p.Defaults.Output != "" {
 		*outPath = p.Defaults.Output
 	}
 
 	var findingsWriter report.ResultWriter
 	var findingsFile *os.File
-
 	if *outPath != "" {
 		f, err := os.Create(*outPath)
 		if err != nil {
@@ -87,18 +76,6 @@ func main() {
 		findingsWriter = writer
 	}
 
-	// Create orchestrator
-	orch := orchestrator.NewOrchestrator(p, session, workersCount, *fix, *allTenants)
-	orch.SetBuffers(*jobsBuffer, *resultsBuffer)
-	orch.SetRemediationAllowlist(parseAllowlist(*allowActions))
-	defer orch.Stop()
-
-	fmt.Println("Starting policy audit...")
-	resultsChan, err := orch.Run()
-	if err != nil {
-		log.Fatalf("Failed to start orchestrator: %v", err)
-	}
-
 	if *metricsAddr != "" {
 		go func() {
 			if err := metrics.StartServer(*metricsAddr); err != nil {
@@ -107,19 +84,32 @@ func main() {
 		}()
 	}
 
-	summaryChan := make(chan report.Summary, 1)
-	go func() {
-		summaryChan <- report.ConsumeResults(resultsChan, findingsWriter)
-	}()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	summary := <-summaryChan
-	report.PrintSummary(os.Stdout, summary)
-	if findingsWriter != nil {
-		fmt.Printf("Findings written: %d\nOutput: %s\n", summary.Written, *outPath)
+	fmt.Printf("Starting policy audit for cloud %q...\n", *cloudName)
+	outcome, err := runner.Run(ctx, runner.Options{
+		Cloud:         *cloudName,
+		Policy:        p,
+		Workers:       *workers,
+		Apply:         *apply,
+		AllTenants:    *allTenants,
+		JobsBuffer:    *jobsBuffer,
+		ResultsBuffer: *resultsBuffer,
+		AllowActions:  parseAllowlist(*allowActions),
+		Writer:        findingsWriter,
+	})
+	if err != nil {
+		log.Fatalf("Audit failed: %v", err)
+	}
+
+	report.PrintSummary(os.Stdout, outcome.Summary)
+	if *outPath != "" {
+		fmt.Printf("Findings written: %d\nOutput: %s\n", outcome.Summary.Written, *outPath)
 	} else {
 		fmt.Println("Findings written: 0 (no --out specified)")
 	}
-	if summary.Violations > 0 {
+	if outcome.Summary.Violations > 0 {
 		os.Exit(2)
 	}
 }

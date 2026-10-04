@@ -84,6 +84,7 @@ nav:
     - Overview: user-guide/index.md
     - Writing Policies: user-guide/policies.md
     - Running the Agent: user-guide/running.md
+    - Web UI: user-guide/web-ui.md
     - Output Formats: user-guide/output-formats.md
   - Contributor Guide:
     - Overview: contributor-guide/index.md

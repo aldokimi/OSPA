@@ -31,7 +31,7 @@ func fetchTroveList(client *gophercloud.ServiceClient, path, listKey string, out
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var raw map[string]json.RawMessage
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return err

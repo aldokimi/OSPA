@@ -1,0 +1,30 @@
+{{define "catalog"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Service catalog</h1>
+      <p class="muted">Registered services and resource types available to auditors.</p>
+    </section>
+    <section class="panel">
+      <table>
+        <thead><tr><th>Service</th><th>Resources</th></tr></thead>
+        <tbody>
+        {{range .Services}}
+          <tr>
+            <td class="mono">{{.Name}}</td>
+            <td class="mono">{{range $i, $r := .Resources}}{{if $i}}, {{end}}{{$r}}{{end}}</td>
+          </tr>
+        {{else}}
+          <tr><td colspan="2" class="muted">No services registered.</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>
+{{end}}
