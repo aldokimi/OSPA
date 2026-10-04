@@ -85,7 +85,7 @@ func (a *BayModelAuditor) Fix(ctx context.Context, client interface{}, resource 
 		if err != nil {
 			return fmt.Errorf("deleting bay model %s: %w", model.Name, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil
 
 	default:

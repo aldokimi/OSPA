@@ -108,7 +108,7 @@ func (a *ClusterTemplateAuditor) Fix(ctx context.Context, client interface{}, re
 		if err != nil {
 			return fmt.Errorf("deleting cluster template %s: %w", tmpl.Name, err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil
 
 	default:
