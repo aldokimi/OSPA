@@ -149,6 +149,11 @@ type CheckConditions struct {
 	// RecordType matches DNS recordset type (A, AAAA, TXT, MX, CNAME, …).
 	RecordType string `yaml:"record_type,omitempty"`
 
+	// --- Trove checks ---
+
+	// BackupRetentionDays flags backups older than the compliance retention window.
+	BackupRetentionDays int `yaml:"backup_retention_days,omitempty"`
+
 	// --- Magnum checks ---
 
 	// TlsDisabled matches Magnum cluster template tls_disabled.
@@ -270,6 +275,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.RecordType != "" {
 		used = append(used, "record_type")
+	}
+	if c.BackupRetentionDays > 0 {
+		used = append(used, "backup_retention_days")
 	}
 	if c.TlsDisabled != nil {
 		used = append(used, "tls_disabled")
