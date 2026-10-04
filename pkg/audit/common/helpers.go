@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -63,7 +64,7 @@ func CheckStatus(a ResourceAdapter, rule *policy.Rule, result *audit.Result) {
 	if rule.Check.Status == "" {
 		return
 	}
-	if a.GetStatus() == rule.Check.Status {
+	if strings.EqualFold(a.GetStatus(), rule.Check.Status) {
 		result.Compliant = false
 		result.Observation = fmt.Sprintf("status is %s", a.GetStatus())
 	}
