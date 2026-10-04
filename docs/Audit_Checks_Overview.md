@@ -95,8 +95,8 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Supported Resources:** `stack`, `resource`, `template`, `snapshot`
 - **Existing Checks (implemented):** hygiene as declared; **`unused` correctly omitted** (no API in-use signal)
 - **Gaps / enhancements (verified):**
-  - **PARTIAL:** failed-stack root-cause composite (`failed_stack_root_cause`) is not built, but discovery already links resources via `HeatResourceInStack.StackName` and SDK exposes status reasons — closer than “no linkage.”
-  - **REAL (API limitation):** orphaned-component cleanup cannot use `unused`; use status/age/dependency-aware alternatives instead.
+  - **DONE (#104/#114):** `failed_stack_root_cause` Heat `CompositeAuditor` joins failed stacks with failed sub-resources via `StackName` + status reasons.
+  - **REAL (API limitation):** orphaned-component cleanup cannot use `unused`; use status/age/dependency-aware alternatives instead (#118).
 
 ### 7. Swift (`swift` / object-store) — Live (hygiene)
 
@@ -225,7 +225,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Idle instance + no keypair | `idle_no_keypair` | DONE (#108) |
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
 | Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
-| Failed stack + failed sub-resources | `failed_stack_root_cause` | PARTIAL — StackName linkage exists; composite not built |
+| Failed stack + failed sub-resources | `failed_stack_root_cause` | DONE (#104/#114) |
 | DNS risky record exposure | `risky_dns_exposure` | DONE (#101) for record_type A/AAAA; zone composites still open |
 
 ## Recommendations
