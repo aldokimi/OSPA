@@ -61,10 +61,10 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - `volume` (**implemented**): `encrypted`, `attached`, `has_backup` + common
   - `snapshot`: guide claims `encrypted`; **validator rejects** `encrypted`; auditor `ImplementedChecks` omits it (comment: encryption inherited from source volume, not on snapshot resource) → treat as **declared-only / blocked**
   - `backup`: common `status/age_gt/exempt_names`
-  - `qos`: `exempt_names` only
+  - `qos`: `exempt_names`, `qos_consumer`, `qos_spec_keys`
 - **Gaps / enhancements (verified):**
   - **REAL:** backup retention window / compliance / backup↔volume matching beyond boolean `has_backup`.
-  - **REAL:** QoS posture fields not modeled (only `exempt_names`).
+  - **DONE (#109):** QoS posture via `qos_consumer` and `qos_spec_keys` (Cinder API Specs map).
   - **DONE (#110):** `unencrypted_volume_backup_risk` when `encrypted` + `has_backup` atomics both fire (volume-level).
   - **REAL (doc/code drift):** align guide + validator + auditor on snapshot `encrypted` (implement via source-volume join, or remove from guide).
 

@@ -36,7 +36,7 @@ func (v *CinderValidator) ValidateResource(check *policy.CheckConditions, resour
 		}
 
 	case "qos":
-		if err := validateAllowedChecks(check, []string{"exempt_names"}); err != nil {
+		if err := validateAllowedChecks(check, []string{"exempt_names", "qos_consumer", "qos_spec_keys"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

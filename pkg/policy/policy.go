@@ -115,6 +115,10 @@ type CheckConditions struct {
 	Encrypted *bool `yaml:"encrypted,omitempty"`
 	Attached  *bool `yaml:"attached,omitempty"`
 	HasBackup *bool `yaml:"has_backup,omitempty"`
+	// QosConsumer matches qos.QoS.Consumer (front-end, back-end, both).
+	QosConsumer string `yaml:"qos_consumer,omitempty"`
+	// QosSpecKeys requires every listed key to be present in qos.QoS.Specs.
+	QosSpecKeys []string `yaml:"qos_spec_keys,omitempty"`
 
 	// --- Glance checks ---
 
@@ -216,6 +220,12 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.HasBackup != nil {
 		used = append(used, "has_backup")
+	}
+	if c.QosConsumer != "" {
+		used = append(used, "qos_consumer")
+	}
+	if len(c.QosSpecKeys) > 0 {
+		used = append(used, "qos_spec_keys")
 	}
 	if c.Visibility != "" {
 		used = append(used, "visibility")

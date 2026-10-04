@@ -54,7 +54,7 @@ This guide explains how to write policies for Cinder resources in OSPA.
 **Resource Type:** `qos`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** exempt_names
+**Allowed Checks:** exempt_names, qos_consumer, qos_spec_keys
 
 
 
