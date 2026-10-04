@@ -104,7 +104,7 @@ func (e *TestEngine) GetIdentityClient(t *testing.T) *gophercloud.ServiceClient 
 	t.Helper()
 	client, err := e.Session.GetKeystoneClient()
 	if err != nil {
-		t.Fatalf("Failed to get keystone client: %v", err)
+		skipOrFail(t, "keystone", err)
 	}
 	return client
 }
@@ -114,7 +114,7 @@ func (e *TestEngine) GetImageClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetGlanceClient()
 	if err != nil {
-		t.Fatalf("Failed to get glance client: %v", err)
+		skipOrFail(t, "glance", err)
 	}
 	return client
 }
@@ -124,7 +124,7 @@ func (e *TestEngine) GetDesignateClient(t *testing.T) *gophercloud.ServiceClient
 	t.Helper()
 	client, err := e.Session.GetDesignateClient()
 	if err != nil {
-		t.Fatalf("Failed to get designate client: %v", err)
+		skipOrFail(t, "designate", err)
 	}
 	return client
 }
@@ -144,7 +144,7 @@ func (e *TestEngine) GetObjectStorageClient(t *testing.T) *gophercloud.ServiceCl
 	t.Helper()
 	client, err := e.Session.GetSwiftClient()
 	if err != nil {
-		t.Fatalf("Failed to get swift client: %v", err)
+		skipOrFail(t, "swift", err)
 	}
 	return client
 }
@@ -154,7 +154,7 @@ func (e *TestEngine) GetIronicClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetIronicClient()
 	if err != nil {
-		t.Fatalf("Failed to get ironic client: %v", err)
+		skipOrFail(t, "ironic", err)
 	}
 	return client
 }
@@ -164,7 +164,7 @@ func (e *TestEngine) GetMagnumClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetMagnumClient()
 	if err != nil {
-		t.Fatalf("Failed to get magnum client: %v", err)
+		skipOrFail(t, "magnum", err)
 	}
 	return client
 }
@@ -174,7 +174,7 @@ func (e *TestEngine) GetManilaClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetManilaClient()
 	if err != nil {
-		t.Fatalf("Failed to get manila client: %v", err)
+		skipOrFail(t, "manila", err)
 	}
 	return client
 }
@@ -194,7 +194,7 @@ func (e *TestEngine) GetSenlinClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetSenlinClient()
 	if err != nil {
-		t.Fatalf("Failed to get senlin client: %v", err)
+		skipOrFail(t, "senlin", err)
 	}
 	return client
 }
@@ -214,7 +214,7 @@ func (e *TestEngine) GetZaqarClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetZaqarClient()
 	if err != nil {
-		t.Fatalf("Failed to get zaqar client: %v", err)
+		skipOrFail(t, "zaqar", err)
 	}
 	return client
 }
@@ -224,7 +224,7 @@ func (e *TestEngine) GetOrchestrationClient(t *testing.T) *gophercloud.ServiceCl
 	t.Helper()
 	client, err := e.Session.GetHeatClient()
 	if err != nil {
-		t.Fatalf("Failed to get heat client: %v", err)
+		skipOrFail(t, "heat", err)
 	}
 	return client
 }
