@@ -14,7 +14,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 >
 > **Gap philosophy (important):** The absence of a check is a *gap* only if the underlying API/audit model can support it. When the API cannot provide required fields/state (or remediation is impossible), we call that out explicitly as an **API-audit model availability** gap.
 >
-> **Composite status:** `pkg/audit/composite.go` defines `CompositeAuditor` / `RegisterComposite`, but **no service currently registers a composite auditor**. Named catalog types below are candidate outcomes, not live check types.
+> **Composite status:** `pkg/audit/composite.go` defines `CompositeAuditor` / `RegisterComposite`. Neutron registers a composite auditor for `shared_network_world_exposure`. Pattern catalog: `docs/reference/composite-patterns.md`.
 
 ### Implementation maturity legend
 
@@ -37,8 +37,8 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - plus common checks where declared
 - **Gaps / enhancements (verified):**
   - **DONE (#102):** `port_range_wide` evaluation + named semantic exposure observations (atomic matching preserved).
-  - **PARTIAL:** true peer-rule bidirectional escalation still needs a registered `CompositeAuditor` (see #103 / #107).
-  - **REAL (cross-resource composite):** `shared_network_world_exposure` needs network ↔ security-group membership correlation; no `CompositeAuditor` does this yet.
+  - **PARTIAL:** true peer-rule bidirectional escalation still needs a richer peer-rule composite.
+  - **DONE (#103/#107):** `shared_network_world_exposure` via Neutron `CompositeAuditor` (network ↔ port ↔ SG rule).
   - Config-plane OSG items (TLS/auth/control-plane) remain **manual-only** — not audit-model gaps unless new inputs are added.
 
 ### 2. Nova (`nova` / compute) — Live
@@ -219,7 +219,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 |---------|----------------|--------|
 | Public exposure + critical ports | `public_sensitive_service_exposure` | PARTIAL — atomic AND works; named composite missing |
 | Ingress + egress wide-open | `bidirectional_world_exposure` | REAL — needs peer-rule / composite eval |
-| Shared scope + exposure rules | `shared_network_world_exposure` | REAL — needs membership correlation |
+| Shared scope + exposure rules | `shared_network_world_exposure` | DONE (#103/#107) |
 | Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
 | Password expired + no MFA | `expired_password_no_mfa` | DONE (#111) |
 | Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | DONE (#110) at volume level; snapshot/backup crypto still incomplete |
