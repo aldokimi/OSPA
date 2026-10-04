@@ -149,6 +149,13 @@ type CheckConditions struct {
 	// RecordType matches DNS recordset type (A, AAAA, TXT, MX, CNAME, …).
 	RecordType string `yaml:"record_type,omitempty"`
 
+	// --- Magnum checks ---
+
+	// TlsDisabled matches Magnum cluster template tls_disabled.
+	TlsDisabled *bool `yaml:"tls_disabled,omitempty"`
+	// NetworkDriver matches Magnum cluster template network_driver.
+	NetworkDriver string `yaml:"network_driver,omitempty"`
+
 	// --- Ironic checks ---
 
 	// ConsoleEnabled matches nodes.Node.ConsoleEnabled.
@@ -263,6 +270,12 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.RecordType != "" {
 		used = append(used, "record_type")
+	}
+	if c.TlsDisabled != nil {
+		used = append(used, "tls_disabled")
+	}
+	if c.NetworkDriver != "" {
+		used = append(used, "network_driver")
 	}
 	if c.ConsoleEnabled != nil {
 		used = append(used, "console_enabled")

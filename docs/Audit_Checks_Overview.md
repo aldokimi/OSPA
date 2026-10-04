@@ -148,7 +148,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Supported Resources:** `cluster`, `cluster_template`, `bay`, `baymodel`
 - **Existing Checks (implemented):** age/status/hygiene as declared
 - **Gaps / enhancements (verified):**
-  - **REAL:** template/policy-level security configuration checks missing.
+  - **DONE (#120):** cluster template security fields retained in discovery; `tls_disabled` and `network_driver` checks.
   - **REAL (audit-model truncation):** discovery currently keeps ID/Name/timestamps for templates — API has richer fields that are dropped before audit. Restore those fields before writing security checks.
 
 ### 13. Ironic (`ironic` / baremetal) — Live

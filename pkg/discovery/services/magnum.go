@@ -40,10 +40,16 @@ type MagnumCluster struct {
 
 // MagnumClusterTemplate is a Magnum cluster template (v1).
 type MagnumClusterTemplate struct {
-	ID        string
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID               string
+	Name             string
+	COE              string
+	NetworkDriver    string
+	TLSDisabled      bool
+	InsecureRegistry *bool
+	MasterLBEnabled  bool
+	FloatingIPEnabled bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // MagnumBay is a Magnum bay (v1; bays are deprecated upstream).
@@ -151,10 +157,16 @@ func (d *MagnumClusterTemplateDiscoverer) Discover(ctx context.Context, client *
 		_ = allTenants
 
 		var wire []struct {
-			ID        string `json:"id"`
-			Name      string `json:"name"`
-			CreatedAt string `json:"created_at"`
-			UpdatedAt string `json:"updated_at"`
+			ID                string `json:"id"`
+			Name              string `json:"name"`
+			COE               string `json:"coe"`
+			NetworkDriver     string `json:"network_driver"`
+			TLSDisabled       bool   `json:"tls_disabled"`
+			InsecureRegistry  *bool  `json:"insecure_registry"`
+			MasterLBEnabled   bool   `json:"master_lb_enabled"`
+			FloatingIPEnabled bool   `json:"floating_ip_enabled"`
+			CreatedAt         string `json:"created_at"`
+			UpdatedAt         string `json:"updated_at"`
 		}
 		if err := fetchMagnumList(client, "templates", "cluster_templates", &wire); err != nil {
 			return
@@ -169,10 +181,16 @@ func (d *MagnumClusterTemplateDiscoverer) Discover(ctx context.Context, client *
 				ResourceType: "cluster_template",
 				ResourceID:   t.ID,
 				Resource: MagnumClusterTemplate{
-					ID:        t.ID,
-					Name:      t.Name,
-					CreatedAt: parseMagnumTime(t.CreatedAt),
-					UpdatedAt: parseMagnumTime(t.UpdatedAt),
+					ID:                t.ID,
+					Name:              t.Name,
+					COE:               t.COE,
+					NetworkDriver:     t.NetworkDriver,
+					TLSDisabled:       t.TLSDisabled,
+					InsecureRegistry:  t.InsecureRegistry,
+					MasterLBEnabled:   t.MasterLBEnabled,
+					FloatingIPEnabled: t.FloatingIPEnabled,
+					CreatedAt:         parseMagnumTime(t.CreatedAt),
+					UpdatedAt:         parseMagnumTime(t.UpdatedAt),
 				},
 			}:
 			}

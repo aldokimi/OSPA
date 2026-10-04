@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -26,7 +27,7 @@ func (a clusterTemplateAdapter) GetUpdatedAt() time.Time { return a.t.UpdatedAt 
 
 // ClusterTemplateAuditor audits magnum/cluster_template resources.
 //
-// Allowed checks: age_gt, exempt_names
+// Allowed checks: age_gt, exempt_names, tls_disabled, network_driver
 // Allowed actions: log, delete
 //
 // Note: cluster templates expose no status field, so status and unused are
@@ -38,7 +39,7 @@ func (a *ClusterTemplateAuditor) ResourceType() string {
 }
 
 func (a *ClusterTemplateAuditor) ImplementedChecks() []string {
-	return []string{"age_gt", "exempt_names"}
+	return []string{"age_gt", "exempt_names", "tls_disabled", "network_driver"}
 }
 
 func (a *ClusterTemplateAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -55,6 +56,28 @@ func (a *ClusterTemplateAuditor) Check(ctx context.Context, resource interface{}
 	exempt, err := common.RunCommonChecks(adapter, rule, result)
 	if exempt || err != nil {
 		return result, err
+	}
+
+	tlsHit := false
+	if rule.Check.TlsDisabled != nil && t.TLSDisabled != *rule.Check.TlsDisabled {
+		tlsHit = true
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("cluster template tls_disabled is %t", t.TLSDisabled)
+	}
+
+	networkHit := false
+	if rule.Check.NetworkDriver != "" && !strings.EqualFold(t.NetworkDriver, rule.Check.NetworkDriver) {
+		networkHit = true
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("cluster template network_driver is %q", t.NetworkDriver)
+	}
+
+	// #120 catalog outcome: insecure template networking posture.
+	if tlsHit && networkHit {
+		result.Observation = fmt.Sprintf(
+			"insecure_template_inputs: tls_disabled=%t network_driver=%q coe=%q",
+			t.TLSDisabled, t.NetworkDriver, t.COE,
+		)
 	}
 
 	return result, nil
