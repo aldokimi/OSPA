@@ -3,6 +3,7 @@ package cinder
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -23,11 +24,12 @@ func (a qosAdapter) GetUpdatedAt() time.Time { return time.Time{} }
 
 // QosAuditor audits cinder/qos resources.
 //
-// Allowed checks: exempt_names
+// Allowed checks: exempt_names, qos_consumer, qos_spec_keys
 // Allowed actions: log, delete, tag
 //
-// Note: QoS specifications are global, admin-only objects with no status,
-// project scoping, or timestamps, so only exempt_names is meaningful.
+// QoS specifications are global, admin-only objects. Posture checks use the
+// Consumer field and Specs map exposed by the Cinder API (e.g. total_iops_sec,
+// total_bytes_sec, read_iops_sec, write_iops_sec).
 type QosAuditor struct{}
 
 func (a *QosAuditor) ResourceType() string {
@@ -35,7 +37,7 @@ func (a *QosAuditor) ResourceType() string {
 }
 
 func (a *QosAuditor) ImplementedChecks() []string {
-	return []string{"exempt_names"}
+	return []string{"exempt_names", "qos_consumer", "qos_spec_keys"}
 }
 
 func (a *QosAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -51,6 +53,36 @@ func (a *QosAuditor) Check(ctx context.Context, resource interface{}, rule *poli
 
 	if common.CheckExemptByName(adapter, rule, result) {
 		return result, nil
+	}
+
+	consumerHit := false
+	if rule.Check.QosConsumer != "" && !strings.EqualFold(q.Consumer, rule.Check.QosConsumer) {
+		consumerHit = true
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("qos consumer is %q, expected %q", q.Consumer, rule.Check.QosConsumer)
+	}
+
+	specHit := false
+	var missingKeys []string
+	if len(rule.Check.QosSpecKeys) > 0 {
+		for _, key := range rule.Check.QosSpecKeys {
+			if _, ok := q.Specs[key]; !ok {
+				missingKeys = append(missingKeys, key)
+			}
+		}
+		if len(missingKeys) > 0 {
+			specHit = true
+			result.Compliant = false
+			result.Observation = fmt.Sprintf("qos spec missing keys: %v", missingKeys)
+		}
+	}
+
+	// #109 catalog outcome when consumer and spec posture both fail.
+	if consumerHit && specHit {
+		result.Observation = fmt.Sprintf(
+			"qos_posture_gap: consumer=%q missing_spec_keys=%v",
+			q.Consumer, missingKeys,
+		)
 	}
 
 	return result, nil
