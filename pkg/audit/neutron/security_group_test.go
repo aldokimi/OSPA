@@ -90,6 +90,33 @@ func TestSecurityGroupAuditor_Check_Exempt(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupAuditor_Check_Unused_NoClient(t *testing.T) {
+	auditor := &SecurityGroupAuditor{}
+	resource := groups.SecGroup{
+		ID:       "test-sg-id",
+		Name:     "orphan-sg",
+		TenantID: "test-tenant-id",
+	}
+	rule := &policy.Rule{
+		Name:     "unused-sg",
+		Service:  "neutron",
+		Resource: "security_group",
+		Check:    policy.CheckConditions{Unused: true},
+		Action:   "log",
+	}
+
+	result, err := auditor.Check(context.Background(), resource, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if !result.Compliant {
+		t.Error("without a client, unused must not false-positive as a violation")
+	}
+	if result.Observation != "unused check pending - requires port enumeration" {
+		t.Errorf("Observation = %q, want pending message", result.Observation)
+	}
+}
+
 func TestSecurityGroupAuditor_Check_AgeGT(t *testing.T) {
 	auditor := &SecurityGroupAuditor{}
 

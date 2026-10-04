@@ -1,0 +1,57 @@
+# DevStack create → audit → manage scenario policy.
+# Used by e2e/scenario and scripts/devstack-manage-test.sh.
+#
+# Resources under test are created with the ospa-e2e- prefix and cleaned up
+# by the scenario harness. Safe defaults: most rules action=log; unused SG
+# uses action=delete so apply mode can prove remediation.
+
+version: v1
+defaults:
+  workers: 8
+
+policies:
+  - neutron:
+    - name: manage-ssh-open-to-world
+      description: Flag SSH (22) open to 0.0.0.0/0
+      resource: security_group_rule
+      severity: critical
+      category: security
+      check:
+        direction: ingress
+        ethertype: IPv4
+        protocol: tcp
+        port: 22
+        remote_ip_prefix: "0.0.0.0/0"
+      action: log
+
+    - name: manage-unused-security-group
+      description: Flag unused security groups (not attached to ports); delete on apply
+      resource: security_group
+      severity: low
+      category: hygiene
+      check:
+        unused: true
+        exempt_names:
+          - default
+          - ospa-e2e-sg-for-rule-*
+      action: delete
+
+  - glance:
+    - name: manage-public-image
+      description: Flag images with public visibility
+      resource: image
+      severity: high
+      category: security
+      check:
+        visibility: public
+      action: log
+
+  - nova:
+    - name: manage-discover-keypairs
+      description: Ensure keypairs are discovered (unused evaluation is best-effort)
+      resource: keypair
+      severity: low
+      category: hygiene
+      check:
+        unused: true
+      action: log
