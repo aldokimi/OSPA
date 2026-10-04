@@ -130,6 +130,11 @@ type CheckConditions struct {
 	// --- Swift checks ---
 
 	QuotaSet *bool `yaml:"quota_set,omitempty"`
+
+	// --- Barbican checks ---
+
+	// SecretType matches Barbican secret_type (e.g. passphrase, private, certificate, opaque).
+	SecretType string `yaml:"secret_type,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -217,6 +222,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.QuotaSet != nil {
 		used = append(used, "quota_set")
+	}
+	if c.SecretType != "" {
+		used = append(used, "secret_type")
 	}
 	return used
 }

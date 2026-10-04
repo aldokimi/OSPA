@@ -91,7 +91,9 @@ func (e *TestEngine) GetBlockStorageClient(t *testing.T) *gophercloud.ServiceCli
 // otherwise fails fatally.
 func skipOrFail(t *testing.T, service string, err error) {
 	t.Helper()
-	if strings.Contains(err.Error(), "unable to create a service client") {
+	msg := err.Error()
+	if strings.Contains(msg, "unable to create a service client") ||
+		strings.Contains(msg, "No suitable endpoint could be found") {
 		t.Skipf("%s service not available in catalog, skipping: %v", service, err)
 	}
 	t.Fatalf("Failed to get %s client: %v", service, err)
@@ -132,7 +134,7 @@ func (e *TestEngine) GetBarbicanClient(t *testing.T) *gophercloud.ServiceClient 
 	t.Helper()
 	client, err := e.Session.GetBarbicanClient()
 	if err != nil {
-		t.Fatalf("Failed to get barbican client: %v", err)
+		skipOrFail(t, "barbican", err)
 	}
 	return client
 }

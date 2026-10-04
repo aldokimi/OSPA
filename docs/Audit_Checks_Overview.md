@@ -121,9 +121,9 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Supported Resources:** `secret`, `container`, `order`
 - **Existing Checks (implemented):** hygiene only (`status/age_gt/unused/exempt_names` as declared)
 - **Gaps / enhancements (verified):**
-  - **REAL in OSPA; SDK-capable:** `SecretType` / algorithm / content-types exist on secrets — add atomic `secret_type` risk classification.
-  - **REAL (API-audit model):** no dedicated “last rotated” field; freshness currently approximated by `age_gt` / updated timestamps only.
-  - **PARTIAL:** `stale_secret_material` composite needs type + age (available once modeled) + usage/policy (not available).
+  - **DONE (#100):** `secret_type` atomic check + `stale_secret_material` semantic observation when `age_gt` matches (optionally filtered by type). Freshness uses Updated/Created — API has no rotation field.
+  - **PARTIAL (#119):** richer type→risk classification (algorithm/content-types) and usage/policy pairing still open.
+  - **REAL (API-audit model):** no dedicated “last rotated” field.
 
 ### 10. Manila (`manila` / shared-file-systems) — Stub
 
