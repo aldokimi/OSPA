@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit/common"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
 	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 )
 
@@ -55,14 +57,9 @@ func (a userAdapter) GetUpdatedAt() time.Time { return time.Time{} }
 // has_admin_role, mfa_enabled
 // Allowed actions: log, delete, tag
 //
-// Note: keystone's v3 User has no creation timestamp in the base API, so
-// age_gt is accepted for policy consistency but is a no-op. inactive_days
-// is not offered at all: there is no last-login field in the base identity
-// API to evaluate it against. has_admin_role requires enumerating the
-// user's role assignments, which Check() cannot do without a client, so it
-// is left as a pending observation. password_expired and mfa_enabled are
-// backed by real fields (PasswordExpiresAt, and the
-// "multi_factor_auth_enabled" user option) and are fully implemented.
+// has_admin_role enumerates role assignments via the service client passed in
+// context (audit.WithClient). Roles named "admin" (case-insensitive) count as
+// high privilege. Combined with mfa_enabled, emits high_privilege_no_mfa.
 type UserAuditor struct{}
 
 func (a *UserAuditor) ResourceType() string {
@@ -74,8 +71,6 @@ func (a *UserAuditor) ImplementedChecks() []string {
 }
 
 func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
-	_ = ctx
-
 	u, ok := resource.(users.User)
 	if !ok {
 		return nil, fmt.Errorf("expected users.User, got %T", resource)
@@ -113,7 +108,6 @@ func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 		}
 	}
 
-	// #111 catalog outcome when both atomics fire together.
 	if passwordExpiredHit && mfaHit {
 		result.Observation = fmt.Sprintf(
 			"expired_password_no_mfa: password expired at %s and MFA enabled is %t",
@@ -121,11 +115,61 @@ func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 		)
 	}
 
+	adminHit := false
 	if rule.Check.HasAdminRole {
-		result.Observation = "has_admin_role check pending - requires role assignment enumeration"
+		hasAdmin, adminErr := userHasAdminRole(ctx, u.ID)
+		if adminErr != nil {
+			result.Observation = fmt.Sprintf("has_admin_role check failed: %v", adminErr)
+			return result, nil
+		}
+		if hasAdmin {
+			adminHit = true
+			result.Compliant = false
+			result.Observation = "user has admin role assigned"
+		}
+	}
+
+	// #105 catalog outcome: admin + MFA posture violation.
+	if adminHit && mfaHit {
+		result.Observation = fmt.Sprintf(
+			"high_privilege_no_mfa: user has admin role and MFA enabled is %t",
+			mfaEnabled,
+		)
 	}
 
 	return result, nil
+}
+
+func userHasAdminRole(ctx context.Context, userID string) (bool, error) {
+	raw, ok := audit.ClientFromContext(ctx)
+	if !ok {
+		return false, fmt.Errorf("service client not available in context")
+	}
+	c, ok := raw.(*gophercloud.ServiceClient)
+	if !ok {
+		return false, fmt.Errorf("expected *gophercloud.ServiceClient, got %T", raw)
+	}
+
+	effective := true
+	includeNames := true
+	pages, err := roles.ListAssignments(c, roles.ListAssignmentsOpts{
+		UserID:       userID,
+		Effective:    &effective,
+		IncludeNames: &includeNames,
+	}).AllPages()
+	if err != nil {
+		return false, err
+	}
+	assignments, err := roles.ExtractRoleAssignments(pages)
+	if err != nil {
+		return false, err
+	}
+	for _, as := range assignments {
+		if strings.EqualFold(as.Role.Name, "admin") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (a *UserAuditor) Fix(ctx context.Context, client interface{}, resource interface{}, rule *policy.Rule) error {

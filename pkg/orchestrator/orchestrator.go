@@ -232,8 +232,8 @@ func (o *Orchestrator) worker(id int, jobsChan <-chan discovery.Job, wg *sync.Wa
 				continue
 			}
 
-			// Check resource
-			result, err := auditor.Check(o.ctx, job.Resource, rule)
+			// Check resource (pass service client for checks that need API calls)
+			result, err := auditor.Check(audit.WithClient(o.ctx, client), job.Resource, rule)
 			if err != nil {
 				result = &audit.Result{
 					RuleID:     rule.Name,

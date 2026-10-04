@@ -144,6 +144,27 @@ func TestUserAuditor_Check_ExpiredPasswordNoMFA(t *testing.T) {
 	}
 }
 
+func TestUserAuditor_Check_HasAdminRole_NoClient(t *testing.T) {
+	auditor := &UserAuditor{}
+	u := users.User{ID: "user-123", Name: "jdoe"}
+	rule := &policy.Rule{
+		Name:  "admins",
+		Check: policy.CheckConditions{HasAdminRole: true},
+	}
+
+	result, err := auditor.Check(context.Background(), u, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	// Without a client in context we stay compliant but record the failure.
+	if !result.Compliant {
+		t.Fatal("expected compliant when admin check cannot run")
+	}
+	if !strings.Contains(result.Observation, "has_admin_role check failed") {
+		t.Fatalf("unexpected observation: %q", result.Observation)
+	}
+}
+
 func TestUserAuditor_Check_ExemptName(t *testing.T) {
 	auditor := &UserAuditor{}
 	u := users.User{ID: "user-123", Name: "admin", Enabled: false}

@@ -78,18 +78,17 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - **REAL (composite):** correlate `image.visibility` with member scope (`ImageID`/`MemberID` already on member) → candidate `public_image_cross_tenant_exposure`.
   - **PARTIAL:** “public image + sensitive tags” needs tag fields in `CheckConditions` (not modeled today).
 
-### 5. Keystone (`keystone` / identity) — Live (admin role pending)
+### 5. Keystone (`keystone` / identity) — Live
 
 - **Supported Resources:** `user`, `role`, `project`, `domain`, `group`, `service`
 - **Existing Checks:**
-  - `user` (**implemented**): `password_expired`, `mfa_enabled` + common
-  - `user` (**declared / pending**): `has_admin_role` — accepted but only emits “pending - requires role assignment enumeration”; does **not** set non-compliant
+  - `user` (**implemented**): `password_expired`, `mfa_enabled`, `has_admin_role` (role-assignment enumeration via client in Check context; role name `admin`) + common
   - `role` / `group`: `age_gt/unused/exempt_names` only (**no `status`** — overview previously overstated)
   - `project` / `domain` / `service`: common as declared
 - **Gaps / enhancements (verified):**
-  - **REAL:** finish `has_admin_role` evaluation, then register `high_privilege_no_mfa` composite.
+  - **DONE (#105):** live `has_admin_role` + `high_privilege_no_mfa` when combined with `mfa_enabled` violation.
   - **DONE (#111):** `expired_password_no_mfa` observation when `password_expired` and `mfa_enabled` both fire.
-  - **REAL:** MFA/posture for service users/groups at scale and admin-role inheritance need relationship model inputs.
+  - **REAL:** MFA/posture for service users/groups at scale and admin-role inheritance need relationship model inputs (#117).
 
 ### 6. Heat (`heat` / orchestration) — Live
 
@@ -201,7 +200,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 - Some “composites” are already expressible as a single-rule AND of atomics (Neutron world+port, Keystone password_expired+MFA, Cinder encrypted+has_backup, Nova unused+no_keypair). Prioritize naming/cataloging those vs inventing new fields.
 
 ### 2) Declared vs implemented drift
-- Notable mismatches: Neutron `port_range_wide`; Cinder snapshot `encrypted`; Ironic port/driver/chassis check lists; Keystone `has_admin_role` pending.
+- Notable mismatches: Cinder snapshot `encrypted`; Ironic port/driver/chassis check lists.
 - Fixing drift is often higher ROI than new composite types.
 
 ### 3) Stub services undercut the guide narrative
@@ -220,7 +219,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Public exposure + critical ports | `public_sensitive_service_exposure` | PARTIAL — atomic AND works; named composite missing |
 | Ingress + egress wide-open | `bidirectional_world_exposure` | REAL — needs peer-rule / composite eval |
 | Shared scope + exposure rules | `shared_network_world_exposure` | DONE (#103/#107) |
-| Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
+| Admin + no MFA | `high_privilege_no_mfa` | DONE (#105) |
 | Password expired + no MFA | `expired_password_no_mfa` | DONE (#111) |
 | Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | DONE (#110) at volume level; snapshot/backup crypto still incomplete |
 | Idle instance + no keypair | `idle_no_keypair` | DONE (#108) |
