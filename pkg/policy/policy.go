@@ -129,6 +129,7 @@ type CheckConditions struct {
 	PasswordExpired bool   `yaml:"password_expired,omitempty"`
 	MFAEnabled      *bool  `yaml:"mfa_enabled,omitempty"`
 	HasAdminRole    bool   `yaml:"has_admin_role,omitempty"`
+	AdminViaGroup   bool   `yaml:"admin_via_group,omitempty"`
 	TokenProvider   string `yaml:"token_provider,omitempty"`
 
 	// --- Swift checks ---
@@ -239,6 +240,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.HasAdminRole {
 		used = append(used, "has_admin_role")
+	}
+	if c.AdminViaGroup {
+		used = append(used, "admin_via_group")
 	}
 	if c.TokenProvider != "" {
 		used = append(used, "token_provider")

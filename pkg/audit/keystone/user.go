@@ -57,9 +57,9 @@ func (a userAdapter) GetUpdatedAt() time.Time { return time.Time{} }
 // has_admin_role, mfa_enabled
 // Allowed actions: log, delete, tag
 //
-// has_admin_role enumerates role assignments via the service client passed in
-// context (audit.WithClient). Roles named "admin" (case-insensitive) count as
-// high privilege. Combined with mfa_enabled, emits high_privilege_no_mfa.
+// has_admin_role and admin_via_group enumerate role assignments via the service
+// client passed in context (audit.WithClient). Combined with mfa_enabled, emits
+// high_privilege_no_mfa.
 type UserAuditor struct{}
 
 func (a *UserAuditor) ResourceType() string {
@@ -67,7 +67,7 @@ func (a *UserAuditor) ResourceType() string {
 }
 
 func (a *UserAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names", "password_expired", "has_admin_role", "mfa_enabled"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "password_expired", "has_admin_role", "admin_via_group", "mfa_enabled"}
 }
 
 func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -126,6 +126,21 @@ func (a *UserAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 			adminHit = true
 			result.Compliant = false
 			result.Observation = "user has admin role assigned"
+		}
+	}
+
+	if rule.Check.AdminViaGroup {
+		viaGroup, groupName, adminErr := userAdminViaGroup(ctx, u.ID)
+		if adminErr != nil {
+			result.Observation = fmt.Sprintf("admin_via_group check failed: %v", adminErr)
+			return result, nil
+		}
+		if viaGroup {
+			result.Compliant = false
+			result.Observation = fmt.Sprintf(
+				"admin_inherited_via_group: user inherits admin through group %q",
+				groupName,
+			)
 		}
 	}
 
