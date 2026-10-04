@@ -2,6 +2,7 @@ package neutron
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
@@ -15,10 +16,24 @@ func TestSecurityGroupRuleAuditor_ResourceType(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupRuleAuditor_ImplementedChecks_IncludesPortRangeWide(t *testing.T) {
+	auditor := &SecurityGroupRuleAuditor{}
+	got := auditor.ImplementedChecks()
+	found := false
+	for _, c := range got {
+		if c == "port_range_wide" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("ImplementedChecks() missing port_range_wide: %v", got)
+	}
+}
+
 func TestSecurityGroupRuleAuditor_Check_SSHOpenToWorld(t *testing.T) {
 	auditor := &SecurityGroupRuleAuditor{}
 
-	// Create a "dangerous" SSH rule - port 22 open to world
 	resource := rules.SecGroupRule{
 		ID:             "test-rule-id",
 		SecGroupID:     "test-sg-id",
@@ -49,25 +64,69 @@ func TestSecurityGroupRuleAuditor_Check_SSHOpenToWorld(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Check() error = %v", err)
 	}
-	if result == nil {
-		t.Fatal("Check() returned nil result")
-	}
-	if result.RuleID != rule.Name {
-		t.Errorf("Result.RuleID = %q, want %q", result.RuleID, rule.Name)
-	}
-	if result.ResourceID != resource.ID {
-		t.Errorf("Result.ResourceID = %q, want %q", result.ResourceID, resource.ID)
-	}
-	// Rule should be non-compliant (it's a dangerous SSH rule)
 	if result.Compliant {
 		t.Error("Expected SSH open to world rule to be non-compliant")
 	}
+	if !strings.Contains(result.Observation, "public_sensitive_service_exposure") {
+		t.Errorf("Expected semantic exposure observation, got %q", result.Observation)
+	}
 }
 
-func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
+func TestSecurityGroupRuleAuditor_Check_SSHOpenToWorld_Egress(t *testing.T) {
 	auditor := &SecurityGroupRuleAuditor{}
 
-	// Create a "safe" SSH rule - port 22 from private network
+	resource := rules.SecGroupRule{
+		ID:             "test-rule-id",
+		SecGroupID:     "test-sg-id",
+		TenantID:       "test-tenant-id",
+		Direction:      "egress",
+		EtherType:      "IPv4",
+		Protocol:       "tcp",
+		PortRangeMin:   22,
+		PortRangeMax:   22,
+		RemoteIPPrefix: "0.0.0.0/0",
+	}
+
+	rule := &policy.Rule{
+		Name:     "test-ssh-open-to-world-egress",
+		Service:  "neutron",
+		Resource: "security_group_rule",
+		Check: policy.CheckConditions{
+			Direction:      "egress",
+			Protocol:       "tcp",
+			Port:           22,
+			RemoteIPPrefix: "0.0.0.0/0",
+		},
+		Action: "log",
+	}
+
+	result, err := auditor.Check(context.Background(), resource, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Error("Expected SSH world-open egress rule to be non-compliant")
+	}
+	if !strings.Contains(result.Observation, "public_sensitive_service_exposure") {
+		t.Errorf("Expected semantic exposure observation, got %q", result.Observation)
+	}
+}
+
+func TestSecurityGroupRuleAuditor_Check_SSHOpenToWorld_BothDirections_Escalation(t *testing.T) {
+	auditor := &SecurityGroupRuleAuditor{}
+
+	rule := &policy.Rule{
+		Name:     "test-ssh-open-to-world-both",
+		Service:  "neutron",
+		Resource: "security_group_rule",
+		Check: policy.CheckConditions{
+			Protocol:       "tcp",
+			Port:           22,
+			RemoteIPPrefix: "0.0.0.0/0",
+		},
+		Action: "log",
+	}
+
 	resource := rules.SecGroupRule{
 		ID:             "test-rule-id",
 		SecGroupID:     "test-sg-id",
@@ -77,7 +136,34 @@ func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
 		Protocol:       "tcp",
 		PortRangeMin:   22,
 		PortRangeMax:   22,
-		RemoteIPPrefix: "10.0.0.0/8", // Private network, not 0.0.0.0/0
+		RemoteIPPrefix: "0.0.0.0/0",
+	}
+
+	result, err := auditor.Check(context.Background(), resource, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Error("Expected SSH world-open both-directions escalation to be non-compliant")
+	}
+	if !strings.Contains(result.Observation, "bidirectional_world_exposure") {
+		t.Errorf("Expected bidirectional escalation observation, got %q", result.Observation)
+	}
+}
+
+func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
+	auditor := &SecurityGroupRuleAuditor{}
+
+	resource := rules.SecGroupRule{
+		ID:             "test-rule-id",
+		SecGroupID:     "test-sg-id",
+		TenantID:       "test-tenant-id",
+		Direction:      "ingress",
+		EtherType:      "IPv4",
+		Protocol:       "tcp",
+		PortRangeMin:   22,
+		PortRangeMax:   22,
+		RemoteIPPrefix: "10.0.0.0/8",
 	}
 
 	rule := &policy.Rule{
@@ -89,7 +175,7 @@ func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
 			Ethertype:      "IPv4",
 			Protocol:       "tcp",
 			Port:           22,
-			RemoteIPPrefix: "0.0.0.0/0", // Looking for open to world
+			RemoteIPPrefix: "0.0.0.0/0",
 		},
 		Action: "log",
 	}
@@ -98,10 +184,6 @@ func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Check() error = %v", err)
 	}
-	if result == nil {
-		t.Fatal("Check() returned nil result")
-	}
-	// Rule should be compliant (it's NOT open to world)
 	if !result.Compliant {
 		t.Error("Expected safe SSH rule (private network) to be compliant")
 	}
@@ -110,7 +192,6 @@ func TestSecurityGroupRuleAuditor_Check_SafeRule(t *testing.T) {
 func TestSecurityGroupRuleAuditor_Check_PortRange(t *testing.T) {
 	auditor := &SecurityGroupRuleAuditor{}
 
-	// Create a rule with a port range
 	resource := rules.SecGroupRule{
 		ID:             "test-rule-id",
 		SecGroupID:     "test-sg-id",
@@ -119,7 +200,7 @@ func TestSecurityGroupRuleAuditor_Check_PortRange(t *testing.T) {
 		EtherType:      "IPv4",
 		Protocol:       "tcp",
 		PortRangeMin:   20,
-		PortRangeMax:   25, // Includes port 22
+		PortRangeMax:   25,
 		RemoteIPPrefix: "0.0.0.0/0",
 	}
 
@@ -130,7 +211,7 @@ func TestSecurityGroupRuleAuditor_Check_PortRange(t *testing.T) {
 		Check: policy.CheckConditions{
 			Direction:      "ingress",
 			Protocol:       "tcp",
-			Port:           22, // Should match since 22 is in range 20-25
+			Port:           22,
 			RemoteIPPrefix: "0.0.0.0/0",
 		},
 		Action: "log",
@@ -140,7 +221,6 @@ func TestSecurityGroupRuleAuditor_Check_PortRange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Check() error = %v", err)
 	}
-	// Rule should be non-compliant (port 22 is in the range)
 	if result.Compliant {
 		t.Error("Expected rule with port range including 22 to be non-compliant")
 	}
@@ -149,14 +229,13 @@ func TestSecurityGroupRuleAuditor_Check_PortRange(t *testing.T) {
 func TestSecurityGroupRuleAuditor_Check_PartialMatch(t *testing.T) {
 	auditor := &SecurityGroupRuleAuditor{}
 
-	// Create a rule that matches some but not all criteria
 	resource := rules.SecGroupRule{
 		ID:             "test-rule-id",
 		SecGroupID:     "test-sg-id",
 		TenantID:       "test-tenant-id",
 		Direction:      "ingress",
 		EtherType:      "IPv4",
-		Protocol:       "udp", // Different protocol
+		Protocol:       "udp",
 		PortRangeMin:   22,
 		PortRangeMax:   22,
 		RemoteIPPrefix: "0.0.0.0/0",
@@ -168,7 +247,7 @@ func TestSecurityGroupRuleAuditor_Check_PartialMatch(t *testing.T) {
 		Resource: "security_group_rule",
 		Check: policy.CheckConditions{
 			Direction:      "ingress",
-			Protocol:       "tcp", // Looking for TCP, but resource is UDP
+			Protocol:       "tcp",
 			Port:           22,
 			RemoteIPPrefix: "0.0.0.0/0",
 		},
@@ -179,9 +258,57 @@ func TestSecurityGroupRuleAuditor_Check_PartialMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Check() error = %v", err)
 	}
-	// Rule should be compliant (protocol doesn't match)
 	if !result.Compliant {
 		t.Error("Expected UDP rule to be compliant when looking for TCP")
+	}
+}
+
+func TestSecurityGroupRuleAuditor_Check_PortRangeWide(t *testing.T) {
+	auditor := &SecurityGroupRuleAuditor{}
+
+	wide := rules.SecGroupRule{
+		ID:           "wide",
+		SecGroupID:   "sg",
+		TenantID:     "t",
+		Direction:    "ingress",
+		EtherType:    "IPv4",
+		Protocol:     "tcp",
+		PortRangeMin: 1,
+		PortRangeMax: 1024, // span 1023 > 100
+	}
+	narrow := rules.SecGroupRule{
+		ID:           "narrow",
+		SecGroupID:   "sg",
+		TenantID:     "t",
+		Direction:    "ingress",
+		EtherType:    "IPv4",
+		Protocol:     "tcp",
+		PortRangeMin: 80,
+		PortRangeMax: 90,
+	}
+
+	rule := &policy.Rule{
+		Name:     "wide-ranges",
+		Service:  "neutron",
+		Resource: "security_group_rule",
+		Check:    policy.CheckConditions{PortRangeWide: true},
+		Action:   "log",
+	}
+
+	wideResult, err := auditor.Check(context.Background(), wide, rule)
+	if err != nil {
+		t.Fatalf("wide Check() error = %v", err)
+	}
+	if wideResult.Compliant {
+		t.Error("Expected wide port range to be non-compliant")
+	}
+
+	narrowResult, err := auditor.Check(context.Background(), narrow, rule)
+	if err != nil {
+		t.Fatalf("narrow Check() error = %v", err)
+	}
+	if !narrowResult.Compliant {
+		t.Error("Expected narrow port range to be compliant")
 	}
 }
 
@@ -274,5 +401,17 @@ func TestPortMatches(t *testing.T) {
 				t.Errorf("portMatches(%d, %d, %d) = %v, want %v", tt.min, tt.max, tt.port, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestIsPortRangeWide(t *testing.T) {
+	if !isPortRangeWide(1, 1024) {
+		t.Error("expected 1-1024 to be wide")
+	}
+	if isPortRangeWide(80, 90) {
+		t.Error("expected 80-90 not to be wide")
+	}
+	if !isPortRangeWide(0, 0) {
+		t.Error("expected all-ports (0-0) to be wide")
 	}
 }

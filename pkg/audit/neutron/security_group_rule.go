@@ -3,6 +3,7 @@ package neutron
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
@@ -12,16 +13,33 @@ import (
 
 // SecurityGroupRuleAuditor audits neutron/security_group_rule resources.
 //
-// Allowed checks: direction, ethertype, protocol, port, remote_ip_prefix, exempt_names
+// Allowed checks: direction, ethertype, protocol, port, remote_ip_prefix,
+// port_range_wide, exempt_names
 // Allowed actions: log, delete
+//
+// Semantic outcomes (#102): when atomic criteria match a world-open rule on a
+// sensitive port/protocol, observations use public_sensitive_service_exposure
+// wording. When the policy does not pin a direction, observations escalate to
+// bidirectional_world_exposure (true peer-rule composites live in CompositeAuditor).
 type SecurityGroupRuleAuditor struct{}
+
+const (
+	worldIPv4CIDR     = "0.0.0.0/0"
+	worldIPv6CIDR     = "::/0"
+	portRangeWideSpan = 100
+)
+
+var sensitivePortProtocols = map[string]struct{}{
+	"tcp:22":   {}, // ssh
+	"tcp:3389": {}, // rdp
+}
 
 func (a *SecurityGroupRuleAuditor) ResourceType() string {
 	return "security_group_rule"
 }
 
 func (a *SecurityGroupRuleAuditor) ImplementedChecks() []string {
-	return []string{"direction", "ethertype", "protocol", "port", "remote_ip_prefix", "exempt_names"}
+	return []string{"direction", "ethertype", "protocol", "port", "remote_ip_prefix", "port_range_wide", "exempt_names"}
 }
 
 func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -32,7 +50,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		return nil, fmt.Errorf("expected rules.SecGroupRule, got %T", resource)
 	}
 
-	// Build a descriptive name for the rule (rules don't have names)
 	ruleName := buildRuleName(sgRule)
 
 	result := &audit.Result{
@@ -40,25 +57,21 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		ResourceID:   sgRule.ID,
 		ResourceName: ruleName,
 		ProjectID:    sgRule.TenantID,
-		Status:       "ACTIVE", // Rules don't have status; they're always active
+		Status:       "ACTIVE",
 		Compliant:    true,
 		Rule:         rule,
 	}
 
-	// Check exemptions first (by security group name pattern - not directly applicable to rules)
-	// Rules don't have names, but we can exempt based on parent SG ID pattern
 	if isExemptByName(sgRule.SecGroupID, rule.Check.ExemptNames) {
 		result.Compliant = true
 		result.Observation = "exempt by security group ID pattern"
 		return result, nil
 	}
 
-	// Security group rule specific checks - all must match for non-compliance
-	// This is used to find "dangerous" rules like SSH open to world
+	// Atomic AND matching: all specified checks must match for non-compliance.
 	allChecksMatch := true
 	var observations []string
 
-	// Direction check (ingress/egress)
 	if rule.Check.Direction != "" {
 		if sgRule.Direction != rule.Check.Direction {
 			allChecksMatch = false
@@ -67,7 +80,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		}
 	}
 
-	// Ethertype check (IPv4/IPv6)
 	if rule.Check.Ethertype != "" {
 		if sgRule.EtherType != rule.Check.Ethertype {
 			allChecksMatch = false
@@ -76,7 +88,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		}
 	}
 
-	// Protocol check (tcp/udp/icmp/etc)
 	if rule.Check.Protocol != "" {
 		if sgRule.Protocol != rule.Check.Protocol {
 			allChecksMatch = false
@@ -85,7 +96,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		}
 	}
 
-	// Port check - matches if the rule's port range includes the specified port
 	if rule.Check.Port != 0 {
 		if !portMatches(sgRule.PortRangeMin, sgRule.PortRangeMax, rule.Check.Port) {
 			allChecksMatch = false
@@ -94,7 +104,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		}
 	}
 
-	// Remote IP prefix check (e.g., 0.0.0.0/0 for "open to world")
 	if rule.Check.RemoteIPPrefix != "" {
 		if sgRule.RemoteIPPrefix != rule.Check.RemoteIPPrefix {
 			allChecksMatch = false
@@ -103,10 +112,17 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 		}
 	}
 
-	// If all specified checks match, the rule is non-compliant (it's a "dangerous" rule)
+	if rule.Check.PortRangeWide {
+		if !isPortRangeWide(sgRule.PortRangeMin, sgRule.PortRangeMax) {
+			allChecksMatch = false
+		} else {
+			observations = append(observations, fmt.Sprintf("port_range_wide=%d-%d", sgRule.PortRangeMin, sgRule.PortRangeMax))
+		}
+	}
+
 	if allChecksMatch && len(observations) > 0 {
 		result.Compliant = false
-		result.Observation = fmt.Sprintf("rule matches policy criteria: %v", observations)
+		result.Observation = semanticObservation(sgRule, rule.Check, observations)
 	}
 
 	return result, nil
@@ -115,7 +131,6 @@ func (a *SecurityGroupRuleAuditor) Check(ctx context.Context, resource interface
 func (a *SecurityGroupRuleAuditor) Fix(ctx context.Context, client interface{}, resource interface{}, rule *policy.Rule) error {
 	_ = ctx
 
-	// Log action doesn't require client or resource validation
 	if rule.Action == "log" {
 		return nil
 	}
@@ -132,7 +147,6 @@ func (a *SecurityGroupRuleAuditor) Fix(ctx context.Context, client interface{}, 
 
 	switch rule.Action {
 	case "delete":
-		// Delete the security group rule
 		if err := rules.Delete(c, sgRule.ID).ExtractErr(); err != nil {
 			return fmt.Errorf("deleting security group rule %s: %w", sgRule.ID, err)
 		}
@@ -143,7 +157,71 @@ func (a *SecurityGroupRuleAuditor) Fix(ctx context.Context, client interface{}, 
 	}
 }
 
-// buildRuleName creates a descriptive name for a security group rule
+func isWorldExposure(prefix string) bool {
+	return prefix == worldIPv4CIDR || prefix == worldIPv6CIDR
+}
+
+func isSensitivePortProtocol(protocol string, port int) bool {
+	if protocol == "" || port <= 0 {
+		return false
+	}
+	_, ok := sensitivePortProtocols[fmt.Sprintf("%s:%d", strings.ToLower(protocol), port)]
+	return ok
+}
+
+func isPortRangeWide(min, max int) bool {
+	if min == 0 && max == 0 {
+		// All ports — treat as wider than the threshold.
+		return true
+	}
+	if max < min {
+		return false
+	}
+	return (max - min) > portRangeWideSpan
+}
+
+// semanticObservation upgrades atomic match text when the matched rule is a
+// world-open sensitive service exposure (catalog: public_sensitive_service_exposure).
+func semanticObservation(sg rules.SecGroupRule, check policy.CheckConditions, atomic []string) string {
+	base := fmt.Sprintf("rule matches policy criteria: %v", atomic)
+
+	port := check.Port
+	if port == 0 && sg.PortRangeMin == sg.PortRangeMax && sg.PortRangeMin > 0 {
+		port = sg.PortRangeMin
+	}
+	proto := check.Protocol
+	if proto == "" {
+		proto = sg.Protocol
+	}
+
+	world := isWorldExposure(sg.RemoteIPPrefix) &&
+		(check.RemoteIPPrefix == "" || isWorldExposure(check.RemoteIPPrefix))
+	sensitive := isSensitivePortProtocol(proto, port)
+
+	if !world || !sensitive {
+		return base
+	}
+
+	dir := sg.Direction
+	if dir == "" {
+		dir = "unknown"
+	}
+
+	// Direction omitted in policy ≈ evaluating any direction; label as
+	// bidirectional escalation candidate (full peer-rule composite is #103/#107).
+	if check.Direction == "" {
+		return fmt.Sprintf(
+			"bidirectional_world_exposure: world exposure for sensitive service %s/%d present (direction=%s); %s",
+			proto, port, dir, base,
+		)
+	}
+
+	return fmt.Sprintf(
+		"public_sensitive_service_exposure: world exposure detected (%s/%s:%d); %s",
+		dir, proto, port, base,
+	)
+}
+
 func buildRuleName(r rules.SecGroupRule) string {
 	proto := r.Protocol
 	if proto == "" {
@@ -170,9 +248,7 @@ func buildRuleName(r rules.SecGroupRule) string {
 	return fmt.Sprintf("%s/%s%s from %s", r.Direction, proto, portRange, remote)
 }
 
-// portMatches checks if a port falls within the rule's port range
 func portMatches(min, max, port int) bool {
-	// If both min and max are 0, the rule applies to all ports
 	if min == 0 && max == 0 {
 		return true
 	}

@@ -1,6 +1,8 @@
 # OSPA Audit Checks Overview
 
 > **Objective:** Analyze existing checks and identify gaps in the OSPA project for service-specific audit checks concerning OpenStack services.
+>
+> **Verified against:** policy guides in `docs/reference/services/*`, validators in `pkg/policy/validation/*`, and auditors in `pkg/audit/*` (as of 2026-10-04).
 
 ## Introduction
 
@@ -8,185 +10,181 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 
 ## Analysis per Service
 
-> **Note:** This overview reflects what the service policy guides in `docs/reference/services/*` declare as supported resources and check conditions.
+> **Note:** “Declared” means what policy guides / validators advertise. “Implemented” means what `Auditor.ImplementedChecks()` + `Check()` actually evaluate.
 >
-> **Gap philosophy (important):** The absence of a check in a policy guide is a *gap* only if the underlying API/audit model can support it. When the API cannot provide required fields/state (or remediation is impossible), we call that out explicitly.
+> **Gap philosophy (important):** The absence of a check is a *gap* only if the underlying API/audit model can support it. When the API cannot provide required fields/state (or remediation is impossible), we call that out explicitly as an **API-audit model availability** gap.
+>
+> **Composite status:** `pkg/audit/composite.go` defines `CompositeAuditor` / `RegisterComposite`, but **no service currently registers a composite auditor**. Named catalog types below are candidate outcomes, not live check types.
 
-### 1. Neutron (`neutron` / network)
+### Implementation maturity legend
+
+| Maturity | Meaning |
+|----------|---------|
+| **Live** | Discovery + auditor `Check()` evaluate conditions |
+| **Declared-only** | Guide/validator lists a check that is not evaluated |
+| **Stub** | Auditor returns empty compliant result (no real evaluation); often discovery is empty too |
+
+### 1. Neutron (`neutron` / network) — Live
+
 - **Supported Resources:** `network`, `security_group`, `security_group_rule`, `floating_ip`, `subnet`, `router`, `port`
-- **Existing Checks (declared):**
-  - `network`: `shared_network` (high, security)
-  - `security_group`: (no additional checks beyond common `status/age_gt/unused/exempt_names`)
-  - `security_group_rule`: `direction` (medium), `ethertype` (low), `protocol` (medium), `port` (high), `remote_ip_prefix` (critical; open-to-world when `0.0.0.0/0` or `::/0`), `port_range_wide` (high), `exempt_names` (low)
+- **Existing Checks:**
+  - `network`: `shared_network` (high, security) + common `status/age_gt/unused/exempt_names`
+  - `security_group`: common only
+  - `security_group_rule` (**implemented**): `direction`, `ethertype`, `protocol`, `port`, `remote_ip_prefix` (critical; open-to-world when `0.0.0.0/0` or `::/0`), `port_range_wide` (span &gt;100 ports), `exempt_names`
+  - Semantic observations on match: `public_sensitive_service_exposure` (world + SSH/RDP); `bidirectional_world_exposure` when policy omits `direction`
   - `port`: `no_security_group` (high, security)
   - `floating_ip`: `unassociated` (medium, cost)
-  - plus common checks: `status`, `age_gt`, `unused`, `exempt_names`
-- **Gaps / enhancements (audit-model + composite):**
-  - Missing **composite exposure correlation**: we currently list rule fields, but we don’t correlate them into actionable “publicly reachable insecure ports/protocols” outcomes.
-  - Missing **world exposure on sensitive ports** composite(s) (combine `remote_ip_prefix` open-to-world + `port`/`protocol`/`direction`).
-  - Missing **direction-aware risk escalation** (separate ingress vs egress composites; escalate if both are wide-open).
-  - Missing **cross-resource composites** (e.g., “shared_network=true + ingress world exposure rules”); requires correlating `network` ↔ `security_group_rule` scope through membership.
-  - Some OpenStack Security Guide items in the Neutron policy guide are explicitly **configuration-plane / manual-only** (TLS/auth/control-plane permissions). These are not audit-model gaps unless new inputs are added.
+  - plus common checks where declared
+- **Gaps / enhancements (verified):**
+  - **DONE (#102):** `port_range_wide` evaluation + named semantic exposure observations (atomic matching preserved).
+  - **PARTIAL:** true peer-rule bidirectional escalation still needs a registered `CompositeAuditor` (see #103 / #107).
+  - **REAL (cross-resource composite):** `shared_network_world_exposure` needs network ↔ security-group membership correlation; no `CompositeAuditor` does this yet.
+  - Config-plane OSG items (TLS/auth/control-plane) remain **manual-only** — not audit-model gaps unless new inputs are added.
 
-### 2. Nova (`nova` / compute)
-- **Supported Resources (declared):** `instance`, `keypair`, `flavor`, `hypervisor`
-- **Existing Checks (declared):**
-  - `instance`: `image_name` (deprecated/banned images), `no_keypair` (no SSH keypair), plus common `status/age_gt/unused/exempt_names`
-  - `keypair`: common `age_gt/unused/exempt_names`
-  - `flavor`: `is_public` (public), plus `exempt_names`
+### 2. Nova (`nova` / compute) — Live
+
+- **Supported Resources:** `instance`, `keypair`, `flavor`, `hypervisor`
+- **Existing Checks (implemented):**
+  - `instance`: `image_name`, `no_keypair`, plus common `status/age_gt/unused/exempt_names`
+  - `keypair`: common `age_gt/unused/exempt_names` (`unused` is pending observation — needs instance enumeration)
+  - `flavor`: `is_public` + `exempt_names`
   - `hypervisor`: `status`, `exempt_names`
-- **Gaps / enhancements:**
-  - **Missing public compute chain composites:** “public flavor + instance exists on public networks” is not auditable unless Nova audit objects include tenancy/network bindings.
-  - **Missing idle+no-keypair remediation intent:** we can flag the combination, but it is not expressed as a composite check in the overview.
-  - **Metadata/auth posture is not represented:** OpenStack Security Guide items about TLS/auth between services are listed in policy guides as manual checks; adding them to OSPA would require config-plane inputs (not present in the audit model today).
+- **Gaps / enhancements (verified):**
+  - **PARTIAL:** “public flavor + instance on public/shared networks” is not a registered composite. Nova server objects already expose `Addresses` / flavor binding; joining to Neutron `shared`/`external` is the missing audit-model step (not “impossible”).
+  - **PARTIAL:** idle/`unused` + `no_keypair` can already AND in one instance rule; still missing a named prioritization composite in the catalog.
+  - **REAL (config-plane):** TLS/auth between services remains manual OSG territory.
 
+### 3. Cinder (`volumev3` / block storage) — Live (with snapshot mismatch)
 
-### 3. Cinder (`volumev3` / block storage)
-- **Supported Resources (declared):** `volume`, `snapshot`, `backup`, `qos`
-- **Existing Checks (declared):**
-  - `volume`: `encrypted` (high), `attached` (medium), `has_backup` (medium), plus common `status/age_gt/unused/exempt_names`
-  - `snapshot`: `encrypted` (high), plus common `status/age_gt/unused/exempt_names`
+- **Supported Resources:** `volume`, `snapshot`, `backup`, `qos`
+- **Existing Checks:**
+  - `volume` (**implemented**): `encrypted`, `attached`, `has_backup` + common
+  - `snapshot`: guide claims `encrypted`; **validator rejects** `encrypted`; auditor `ImplementedChecks` omits it (comment: encryption inherited from source volume, not on snapshot resource) → treat as **declared-only / blocked**
   - `backup`: common `status/age_gt/exempt_names`
-  - `qos`: `exempt_names` only (no QoS posture fields in the current policy guide)
-- **Gaps / enhancements (audit-model + composite):**
-  - **Backup lifecycle semantics missing:** we only have “has_backup” at the volume level, but not retention window/compliance or backup-to-volume matching.
-  - **QoS posture checks missing:** current `qos` policy guide exposes only `exempt_names` → composite checks can’t be expressed without the relevant QoS fields being modeled.
-  - **Correlation opportunity:** “encrypted=false + has_backup=true” could drive a composite “unencrypted volume with insufficient cryptographic controls” narrative, but requires richer audit fields (encryption state on snapshots/backups).
+  - `qos`: `exempt_names` only
+- **Gaps / enhancements (verified):**
+  - **REAL:** backup retention window / compliance / backup↔volume matching beyond boolean `has_backup`.
+  - **REAL:** QoS posture fields not modeled (only `exempt_names`).
+  - **PARTIAL:** volume-level `encrypted=false` + `has_backup` can AND in one rule today. Richer “insufficient crypto controls” narrative still needs snapshot/backup encryption state (API-audit model gap for those resources).
+  - **REAL (doc/code drift):** align guide + validator + auditor on snapshot `encrypted` (implement via source-volume join, or remove from guide).
 
-### 4. Glance (`glance` / image)
-- **Supported Resources (declared):** `image`, `member`
-- **Existing Checks (declared):**
-  - `image`: `visibility` (high), plus `status/age_gt/unused/exempt_names`
-  - `member`: common `status/age_gt/unused/exempt_names` (no member-specific security check fields)
-- **Gaps / enhancements (composite semantics):**
-  - **Cross-tenant exposure correlation missing:** we can detect public images via `image.visibility`, but we don’t correlate image visibility + member scope to precisely classify *who can access what*.
-  - **Composite posture classification:** candidate composites like “public image + sensitive tags/member scope present” are not expressible without additional member/image linkage fields in the audit model.
+### 4. Glance (`glance` / image) — Live
 
+- **Supported Resources:** `image`, `member`
+- **Existing Checks (implemented):**
+  - `image`: `visibility` + common
+  - `member`: common only (`unused` ≈ pending acceptance)
+- **Gaps / enhancements (verified):**
+  - **REAL (composite):** correlate `image.visibility` with member scope (`ImageID`/`MemberID` already on member) → candidate `public_image_cross_tenant_exposure`.
+  - **PARTIAL:** “public image + sensitive tags” needs tag fields in `CheckConditions` (not modeled today).
 
-### 5. Keystone (`keystone` / identity)
-- **Supported Resources (declared):** `user`, `role`, `project`, `domain`, `group`, `service`
-- **Existing Checks (declared):**
-  - `user`: `password_expired` (high), `mfa_enabled` (high), `has_admin_role` (high), plus common `status/age_gt/unused/exempt_names`
-  - `role/project/domain/group/service`: common `status/age_gt/unused/exempt_names` only (no role-relationship security checks in current guide)
-- **Gaps / enhancements (composite + implementation constraints):**
-  - **Composite “admin + no MFA” not realized as a composite check in the overview**. This is a prime candidate, but note: the audit implementation comment indicates `has_admin_role` requires enumerating role assignments via a client and is treated as a pending observation, so composite depends on fully auditable `has_admin_role` data.
-  - **Missing “password_expired + no MFA” correlation** to prioritize high-risk accounts (requires both fields, which exist).
-  - **Scope/relationship gaps:** no checks describe MFA for service users/groups at scale, or admin-role inheritance models.
+### 5. Keystone (`keystone` / identity) — Live (admin role pending)
 
+- **Supported Resources:** `user`, `role`, `project`, `domain`, `group`, `service`
+- **Existing Checks:**
+  - `user` (**implemented**): `password_expired`, `mfa_enabled` + common
+  - `user` (**declared / pending**): `has_admin_role` — accepted but only emits “pending - requires role assignment enumeration”; does **not** set non-compliant
+  - `role` / `group`: `age_gt/unused/exempt_names` only (**no `status`** — overview previously overstated)
+  - `project` / `domain` / `service`: common as declared
+- **Gaps / enhancements (verified):**
+  - **REAL:** finish `has_admin_role` evaluation, then register `high_privilege_no_mfa` composite.
+  - **PARTIAL:** `password_expired` + `mfa_enabled` fields both work; can AND in one user rule today — still missing a named composite outcome.
+  - **REAL:** MFA/posture for service users/groups at scale and admin-role inheritance need relationship model inputs.
 
-### 6. Heat (`heat` / orchestration)
-- **Supported Resources (declared):** `stack`, `resource`, `template`, `snapshot`
-- **Existing Checks (declared):**
-  - `stack`: `status`, `age_gt`, `exempt_names` (log/delete in guide)
-  - `resource`: `status`, `age_gt`, `exempt_names` (log only; remediation only through parent stack)
-  - `template`: `exempt_names` (log only)
-  - `snapshot`: `age_gt`, `exempt_names` (log only)
-- **Gaps / enhancements (composite + model limitations):**
-  - **Failed stack + failed resources correlation**: a composite “stack CREATE/UPDATE failed because sub-resources failed” is not expressible unless we have cross-resource linking/exposed failure reason fields in the audit model.
-  - **Orphaned components**: `unused` is not offered because Heat lacks an API “in use” signal in the policy guide → gaps should be framed as *API-audit model limitations*, not missing composites.
+### 6. Heat (`heat` / orchestration) — Live
 
+- **Supported Resources:** `stack`, `resource`, `template`, `snapshot`
+- **Existing Checks (implemented):** hygiene as declared; **`unused` correctly omitted** (no API in-use signal)
+- **Gaps / enhancements (verified):**
+  - **PARTIAL:** failed-stack root-cause composite (`failed_stack_root_cause`) is not built, but discovery already links resources via `HeatResourceInStack.StackName` and SDK exposes status reasons — closer than “no linkage.”
+  - **REAL (API limitation):** orphaned-component cleanup cannot use `unused`; use status/age/dependency-aware alternatives instead.
 
-### 7. Swift (`swift` / object-store)
-- **Supported Resources (declared):** `account`, `container`, `object`
-- **Existing Checks (declared):**
-  - `account`: `quota_set` (log only)
-  - `container`: `unused`, `exempt_names` (no status/age in guide)
-  - `object`: `age_gt`, `exempt_names` (no status)
-- **Gaps / enhancements (model/field availability):**
-  - Missing *object/container security semantics* (ACL/metadata/retention flags). Adding them requires the audit model to expose the corresponding Swift fields.
-  - Composite “policy-driven exposure” checks (e.g., *public container + old object*) aren’t possible until we model *visibility/exposure* fields in the audit model.
+### 7. Swift (`swift` / object-store) — Live (hygiene)
 
+- **Supported Resources:** `account`, `container`, `object`
+- **Existing Checks (implemented):** as declared (account `quota_set` log-only; container unused/exempt; object age/exempt)
+- **Gaps / enhancements (verified):**
+  - **REAL in OSPA model; SDK-capable:** container ACL headers (`Read`/`Write`) exist via container Get — not modeled because discovery/audit currently list-oriented.
+  - **REAL until exposure fields exist:** composite like public container + old object.
 
-### 8. Octavia (`octavia` / load-balancer)
-- **Supported Resources (declared):** `loadbalancer`, `listener`, `pool`, `member`, `healthmonitor`
-- **Existing Checks (declared):**
-  - all: `status`, `age_gt`, `exempt_names`
-  - no protocol/cipher/port checks are currently modeled in the policy guide
-- **Gaps / enhancements (composite readiness):**
-  - Security guide intent around listener TLS/protocol hardening is not represented as auditable checks in the current guide. Implementing it would require listener/pool fields for TLS configuration, cipher suites, and port exposure in the audit model.
-  - Candidate composites (once fields exist): *public LB + listener port=443 + TLS min version too low*, *insecure protocol present + wide world access*.
+### 8. Octavia (`octavia` / load-balancer) — Stub
 
+- **Supported Resources:** `loadbalancer`, `listener`, `pool`, `member`, `healthmonitor`
+- **Existing Checks:** declared hygiene only; **auditors are stubs** (`Check` returns empty compliant result)
+- **Gaps / enhancements (verified):**
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene evaluation.
+  - **REAL (OSPA model); SDK-capable:** listener `Protocol`, `ProtocolPort`, `TLSCiphers`, `DefaultTlsContainerRef` exist in gophercloud — TLS/protocol hardening is an OSPA modeling gap more than an OpenStack API gap.
+  - Candidate composites once live: public LB + weak TLS min / insecure protocol + wide exposure.
 
-### 9. Barbican (`barbican` / key-manager)
-- **Supported Resources (declared):** `secret`, `container`, `order`
-- **Existing Checks (declared):**
-  - `secret`: `status`, `age_gt`, `unused`, `exempt_names`
-  - `container`: `status`, `age_gt`, `unused`, `exempt_names`
-  - `order`: `status`, `age_gt`, `exempt_names`
-- **Gaps / enhancements (semantic gaps + rotation requirements):**
-  - **Semantic risk classification is missing:** we don’t classify secret types (e.g., key/cert/password) and map them to different risk levels.
-  - **Rotation freshness semantics are missing:** `age_gt` exists, but there’s no explicit “last rotated” field or lifecycle metadata exposed in the current policy guide.
-  - **Composite prerequisites:** rotation risk composites often need pairing “secret-type + age + active usage / policy.” Current audit model does not expose usage/lifecycle fields beyond status/age.
+### 9. Barbican (`barbican` / key-manager) — Live (hygiene)
 
+- **Supported Resources:** `secret`, `container`, `order`
+- **Existing Checks (implemented):** hygiene only (`status/age_gt/unused/exempt_names` as declared)
+- **Gaps / enhancements (verified):**
+  - **REAL in OSPA; SDK-capable:** `SecretType` / algorithm / content-types exist on secrets — add atomic `secret_type` risk classification.
+  - **REAL (API-audit model):** no dedicated “last rotated” field; freshness currently approximated by `age_gt` / updated timestamps only.
+  - **PARTIAL:** `stale_secret_material` composite needs type + age (available once modeled) + usage/policy (not available).
 
-### 10. Manila (`manila` / shared-file-systems)
-- **Supported Resources (declared):** `share`, `share_snapshot`, `share_network`, `share_server`
-- **Existing Checks (declared):**
-  - `share`: `status`, `age_gt`, `unused`, `exempt_names`
-  - `share_snapshot`: `status`, `age_gt`, `exempt_names`
-  - `share_network`: `age_gt`, `exempt_names`
-  - `share_server`: `status`, `age_gt`, `exempt_names`
-- **Gaps / enhancements (model field availability):**
-  - Encryption posture checks are not represented in the current policy guide. If the Manila audit model exposes encryption-at-rest/in-transit fields, we can add semantic composites; otherwise we should mark this as an *API-audit model availability* gap.
+### 10. Manila (`manila` / shared-file-systems) — Stub
 
+- **Supported Resources:** `share`, `share_snapshot`, `share_network`, `share_server`
+- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Gaps / enhancements (verified):**
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
+  - **REAL (missed implementable once live):** `is_public` / share visibility posture.
+  - **PARTIAL / availability:** dedicated encryption-at-rest/in-transit fields are not clearly exposed on the share struct — confirm API before promising encryption composites.
 
-### 11. Trove (`trove` / database)
-- **Supported Resources (declared):** `instance`, `cluster`, `backup`, `datastore`
-- **Existing Checks (declared):**
-  - `instance`: `status`, `age_gt`, `exempt_names`
-  - `cluster`: `status`, `age_gt`, `exempt_names`
-  - `backup`: `age_gt`, `exempt_names`
-  - `datastore`: `age_gt`, `exempt_names`
-- **Gaps / enhancements (semantic + model prerequisites):**
-  - Backup retention windows/compliance semantics are not expressed; `backup` only has `age_gt` + `exempt_names`.
-  - TLS/transport security exposure is not represented unless audit model includes TLS settings/cert metadata.
+### 11. Trove (`trove` / database) — Stub
 
+- **Supported Resources:** `instance`, `cluster`, `backup`, `datastore`
+- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Gaps / enhancements (verified):**
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
+  - **REAL:** backup retention/compliance beyond `age_gt`; TLS/transport posture only if audit model gains TLS/cert metadata.
 
-### 12. Magnum (`magnum` / container-infra)
-- **Supported Resources (declared):** `cluster`, `cluster_template`, `bay`, `baymodel`
-- **Existing Checks (declared):**
-  - `cluster`: `status`, `age_gt`, `exempt_names`
-  - `cluster_template`: `age_gt`, `exempt_names`
-  - `bay`: `status`, `age_gt`, `exempt_names`
-  - `baymodel`: `age_gt`, `exempt_names`
-- **Gaps / enhancements (semantic posture):**
-  - Template/policy-level security configuration checks are missing: the current policy guide exposes only age/status/hygiene for these resources.
-  - Composite “insecure template inputs” patterns would require auditable fields for insecure networking, privileged containers, weak cluster settings, etc.
+### 12. Magnum (`magnum` / container-infra) — Live (truncated discovery)
 
+- **Supported Resources:** `cluster`, `cluster_template`, `bay`, `baymodel`
+- **Existing Checks (implemented):** age/status/hygiene as declared
+- **Gaps / enhancements (verified):**
+  - **REAL:** template/policy-level security configuration checks missing.
+  - **REAL (audit-model truncation):** discovery currently keeps ID/Name/timestamps for templates — API has richer fields that are dropped before audit. Restore those fields before writing security checks.
 
-### 13. Ironic (`ironic` / baremetal)
-- **Supported Resources (declared):** `node`, `port`, `driver`, `chassis`
-- **Existing Checks (declared):** all: `status`, `age_gt`, `unused`, `exempt_names`
-- **Gaps / enhancements (model field availability):**
-  - Insecure provisioning / provisioning-time parameters are not represented in the current policy guide. If the Ironic audit model exposes PXE/TLS/driver/provisioning settings, we can add semantic composites; otherwise this should be explicitly an *API-audit model availability* gap.
+### 13. Ironic (`ironic` / baremetal) — Live (guide drift)
 
+- **Supported Resources:** `node`, `port`, `driver`, `chassis`
+- **Existing Checks (implemented — differs from guide):**
+  - `node`: `status`, `age_gt`, `unused`, `exempt_names`
+  - `port`: `age_gt`, `exempt_names` only
+  - `driver`: `exempt_names` only
+  - `chassis`: `age_gt`, `exempt_names` only
+- **Gaps / enhancements (verified):**
+  - **REAL (doc drift):** policy guide claims status/unused for port/driver/chassis; validators/auditors do not — align docs.
+  - **REAL:** provisioning-time insecure parameters (PXE/TLS/driver settings) not modeled; add if Ironic audit payloads expose them.
 
-### 14. Designate (`designate` / dns)
-- **Supported Resources (declared):** `zone`, `recordset`, `record`
-- **Existing Checks (declared):**
-  - `zone`/`recordset`: `status`, `age_gt`, `unused`, `exempt_names`
-  - `record`: `status`, `age_gt`, `exempt_names` (no `unused` in guide)
-- **Gaps / enhancements (semantic need):**
-  - DNS exposure security checks (public record posture, risky record types/values) are not expressed because the current policy guide exposes only lifecycle/hygiene checks.
-  - Once audit model includes record-level “value/type/target” fields, we can add composites like *A/AAAA to public IPs + zone exposure*.
+### 14. Designate (`designate` / dns) — Live
 
+- **Supported Resources:** `zone`, `recordset`, `record`
+- **Existing Checks (implemented):** hygiene as declared; recordset `unused` already uses `len(Records)==0`
+- **Gaps / enhancements (verified):**
+  - **PARTIAL (overstated previously):** recordset SDK already has `Type` + `Records`. DNS exposure / risky record-type checks are **implementable** once added to guide + `CheckConditions` — not blocked on API unavailability.
+  - Candidate: A/AAAA pointing at public IPs + zone exposure composites.
 
-### 15. Senlin (`senlin` / clustering)
-- **Supported Resources (declared):** `cluster`, `profile`, `node`, `policy`
-- **Existing Checks (declared):**
-  - `cluster`: `status`, `age_gt`, `exempt_names`
-  - `node`: `status`, `age_gt`, `exempt_names`
-  - `profile`: `age_gt`, `exempt_names`
-  - `policy`: `age_gt`, `exempt_names`
-- **Gaps / enhancements (relationship/semantic needs):**
-  - Senlin policy composition security (what profile/policy implies for runtime) is not represented; adding composites requires audit fields for policy definitions/constraints, not just lifecycle metadata.
+### 15. Senlin (`senlin` / clustering) — Stub
 
+- **Supported Resources:** `cluster`, `profile`, `node`, `policy`
+- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Gaps / enhancements (verified):**
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
+  - **REAL:** policy-composition security needs profile/policy definition fields, not just lifecycle metadata.
 
-### 16. Zaqar (`zaqar` / messaging)
-- **Supported Resources (declared):** `queue`, `message`, `subscription`
-- **Existing Checks (declared):** all: `status`, `age_gt`, `exempt_names`
-- **Gaps / enhancements (data sensitivity + model limitations):**
-  - Message payload/content risk checks are not represented; implementing them safely requires either metadata-level fields (e.g., content type) or a sanitized audit-model surface. Without payload metadata, we can’t add meaningful semantic checks.
+### 16. Zaqar (`zaqar` / messaging) — Stub
+
+- **Supported Resources:** `queue`, `message`, `subscription`
+- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Gaps / enhancements (verified):**
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
+  - **REAL (cautious):** payload/content risk checks need sanitized metadata (content-type etc.); do not require raw payload inspection.
 
 
 ## Scaffolding Insights
@@ -194,42 +192,59 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 The scaffolding tool provided within OSPA enables the generation of template checks for resources. However, it has some limitations:
 - Manual intervention is often required to customize templates for more complex resource relationships.
 - Composite/semantic checks are harder because they require consistent audit-model fields and cross-resource linking/identity (not just per-resource conditions).
+- Several scaffolded services remain **stubs** (Octavia, Manila, Trove, Senlin, Zaqar) — declared checks are not yet functional.
 
 ## Key Gaps Across OSPA
 
-### 1) Semantic/composite correlation gaps (the biggest opportunity)
-- Many policy guides correctly enumerate *atomic* checks, but OSPA lacks a standard approach for translating those low-level fields into **high-signal compliance outcomes**.
-- This especially affects cases where risk emerges only when multiple fields co-occur (e.g., Neutron world exposure + sensitive ports + ingress/egress direction).
+### 1) Semantic/composite correlation gaps (biggest opportunity)
+- Many policy guides enumerate *atomic* checks, but OSPA lacks registered composite auditors that turn co-occurring fields into **high-signal compliance outcomes**.
+- Some “composites” are already expressible as a single-rule AND of atomics (Neutron world+port, Keystone password_expired+MFA, Cinder encrypted+has_backup, Nova unused+no_keypair). Prioritize naming/cataloging those vs inventing new fields.
 
-### 2) Composite checks are constrained by audit-model availability
-- If the audit layer does not expose the fields needed for correlation (e.g., Heat sub-resource failure reasons; Swift object/container visibility; Barbican secret lifecycle/usage; Octavia TLS/cipher exposure), we should explicitly mark those as **API-audit model gaps** rather than “missing check logic”.
+### 2) Declared vs implemented drift
+- Notable mismatches: Neutron `port_range_wide`; Cinder snapshot `encrypted`; Ironic port/driver/chassis check lists; Keystone `has_admin_role` pending.
+- Fixing drift is often higher ROI than new composite types.
 
-### 3) Lifecycle hygiene is not consistently expressed as auditable “unused/orphaned” signals
-- Some services don’t offer an “in use” signal (Heat/Magnum guides explicitly omit `unused`). Where that’s the case, remediation ideas should be reframed toward status-based cleanup, age-based teardown, or higher-level dependency checks.
+### 3) Stub services undercut the guide narrative
+- Octavia / Manila / Trove / Senlin / Zaqar advertise hygiene checks that currently no-op. Treat “make live” as a prerequisite before semantic enhancements.
+
+### 4) Composite checks constrained by audit-model availability
+- Label honestly: Heat/Swift/Barbican usage fields, Magnum truncated templates, Manila encryption uncertainty, etc. Prefer “SDK has X but OSPA drops it” over “API cannot support X” when the SDK already exposes the field.
+
+### 5) Lifecycle hygiene / unused signals
+- Where APIs lack in-use signals (Heat; Magnum templates), reframe remediation around status/age/dependency checks rather than inventing `unused`.
 
 ## Gap catalog (composite pattern → candidate check type)
 
-- **Public exposure + critical ports** → `public_sensitive_service_exposure` (Neutron: remote_ip_prefix open + protocol/port)
-- **Ingress + egress wide-open** → `bidirectional_world_exposure` escalation
-- **Shared scope + exposure rules** → `shared_network_world_exposure` (Neutron cross-correlating network sharing with rule posture; requires relationship inputs)
-- **Admin + no MFA** → `high_privilege_no_mfa` (Keystone; composite depends on fully auditable has_admin_role data)
-- **Rotation freshness risk** → `stale_secret_material` (Barbican; needs secret rotation lifecycle fields)
-- **Public image distribution + access scope** → `public_image_cross_tenant_exposure` (Glance; needs member scope semantics)
-- **Failed stack + failed sub-resources** → `failed_stack_root_cause` (Heat; needs sub-resource failure aggregation fields)
+| Pattern | Candidate type | Status |
+|---------|----------------|--------|
+| Public exposure + critical ports | `public_sensitive_service_exposure` | PARTIAL — atomic AND works; named composite missing |
+| Ingress + egress wide-open | `bidirectional_world_exposure` | REAL — needs peer-rule / composite eval |
+| Shared scope + exposure rules | `shared_network_world_exposure` | REAL — needs membership correlation |
+| Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
+| Password expired + no MFA | `expired_password_no_mfa` | PARTIAL — AND-able today |
+| Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | PARTIAL — volume AND-able; snapshot/backup crypto incomplete |
+| Idle instance + no keypair | `idle_no_keypair` | PARTIAL — AND-able today |
+| Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
+| Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
+| Failed stack + failed sub-resources | `failed_stack_root_cause` | PARTIAL — StackName linkage exists; composite not built |
+| DNS risky record exposure | `risky_dns_exposure` | PARTIAL — Type/Records available; not in guide |
 
 ## Recommendations
-1. Adopt the “gap philosophy”: treat missing checks as gaps only when the audit-model supports it; otherwise label as **API-audit model availability**.
-2. Implement a core composite-check pattern library (atomic → semantic translation) and reuse it across services.
-3. Prioritize composites with the highest audit-model likelihood:
-   - Neutron world exposure + sensitive ports (strong field support)
-   - Keystone admin role + MFA (partially supported; verify has_admin_role auditable inputs)
-   - Glance public visibility + member scope (if member scope is auditable)
-4. Extend scaffolding/generator to scaffold composite rules with explicit “inputs required” documentation.
-5. Add a regular checkpoint cadence tied to OSG updates, and verify check coverage by comparing policy guide allowed checks vs implemented/composite catalogs.
+1. Adopt the gap philosophy: missing checks are gaps only when the audit-model/SDK supports them; otherwise label **API-audit model availability**. Prefer “OSPA truncates SDK field X” when that is the real blocker.
+2. Register a core composite-check pattern library (`RegisterComposite`) and document required inputs per pattern.
+3. Prioritize by likelihood / ROI:
+   1. Fix declared-vs-implemented drift (`port_range_wide`, snapshot `encrypted` story, Ironic guide, `has_admin_role`)
+   2. Neutron world exposure semantic naming + `shared_network_world_exposure`
+   3. Keystone `password_expired`+MFA (AND/catalog) and finish `has_admin_role` → `high_privilege_no_mfa`
+   4. Un-stub Octavia/Manila/Trove (and model SDK TLS / `is_public` fields)
+   5. Barbican `secret_type` + Designate record-type checks (SDK-ready)
+4. Extend scaffolding so generated services are not left as permanent empty `Check()` stubs.
+5. Keep a cadence vs OpenStack Security Guide updates; compare guide allowed checks ↔ `ImplementedChecks()` ↔ composite catalog.
 
 ## References
 - [OpenStack Security Guide](https://docs.openstack.org/security-guide/)
 - [OSPA Documentation](https://openstack-policy-agent.github.io/OSPA/)
 - [OpenStack API Documentation (Nova)](https://docs.openstack.org/api-ref/nova/)
- 
-
+- Policy guides: `docs/reference/services/*`
+- Auditors: `pkg/audit/*`
+- Composite interface: `pkg/audit/composite.go`
