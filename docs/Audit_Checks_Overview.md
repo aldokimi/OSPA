@@ -50,7 +50,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - `flavor`: `is_public` + `exempt_names`
   - `hypervisor`: `status`, `exempt_names`
 - **Gaps / enhancements (verified):**
-  - **PARTIAL:** “public flavor + instance on public/shared networks” is not a registered composite. Nova server objects already expose `Addresses` / flavor binding; joining to Neutron `shared`/`external` is the missing audit-model step (not “impossible”).
+  - **DONE (#106):** `public_flavor_network_binding` Nova composite (public flavor + instance with Addresses). Neutron shared/external join remains a cross-service follow-up.
   - **DONE (#108):** `idle_no_keypair` observation when `unused` (SHUTOFF) and `no_keypair` both fire.
   - **REAL (config-plane):** TLS/auth between services remains manual OSG territory.
 
