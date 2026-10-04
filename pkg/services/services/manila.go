@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 
+	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit/manila"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/auth"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/discovery"

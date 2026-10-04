@@ -58,7 +58,7 @@ func (s *MagnumService) GetResourceAuditor(resourceType string) (audit.Auditor, 
 	case "bay":
 		return &magnum.BayAuditor{}, nil
 	case "baymodel":
-		return &magnum.BaymodelAuditor{}, nil
+		return &magnum.BayModelAuditor{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}
@@ -73,7 +73,7 @@ func (s *MagnumService) GetResourceDiscoverer(resourceType string) (discovery.Di
 	case "bay":
 		return &discovery_services.MagnumBayDiscoverer{}, nil
 	case "baymodel":
-		return &discovery_services.MagnumBaymodelDiscoverer{}, nil
+		return &discovery_services.MagnumBayModelDiscoverer{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type %q for service %q", resourceType, s.Name())
 	}
