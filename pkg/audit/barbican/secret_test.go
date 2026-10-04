@@ -2,6 +2,7 @@ package barbican
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,6 +53,85 @@ func TestSecretAuditor_Check_Expired(t *testing.T) {
 	}
 	if result.Compliant {
 		t.Error("Check() expected non-compliant for expired secret")
+	}
+}
+
+func TestSecretAuditor_Check_StaleSecretMaterial(t *testing.T) {
+	auditor := &SecretAuditor{}
+	s := secrets.Secret{
+		SecretRef:  "https://kms/v1/secrets/abc-123",
+		Name:       "old-passphrase",
+		SecretType: "passphrase",
+		Created:    time.Now().Add(-48 * time.Hour),
+		Updated:    time.Now().Add(-48 * time.Hour),
+	}
+
+	rule := &policy.Rule{
+		Name: "stale-passphrases",
+		Check: policy.CheckConditions{
+			AgeGT:      "1d",
+			SecretType: "passphrase",
+		},
+	}
+
+	result, err := auditor.Check(context.Background(), s, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for stale passphrase")
+	}
+	if !strings.Contains(result.Observation, "stale_secret_material") {
+		t.Fatalf("expected stale_secret_material observation, got %q", result.Observation)
+	}
+}
+
+func TestSecretAuditor_Check_SecretTypeFilterMiss(t *testing.T) {
+	auditor := &SecretAuditor{}
+	s := secrets.Secret{
+		SecretRef:  "https://kms/v1/secrets/abc-123",
+		Name:       "cert",
+		SecretType: "certificate",
+		Created:    time.Now().Add(-48 * time.Hour),
+		Updated:    time.Now().Add(-48 * time.Hour),
+	}
+
+	rule := &policy.Rule{
+		Name: "stale-passphrases",
+		Check: policy.CheckConditions{
+			AgeGT:      "1d",
+			SecretType: "passphrase",
+		},
+	}
+
+	result, err := auditor.Check(context.Background(), s, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if !result.Compliant {
+		t.Fatalf("expected compliant when secret_type does not match, got %q", result.Observation)
+	}
+}
+
+func TestSecretAuditor_Check_SecretTypeAlone(t *testing.T) {
+	auditor := &SecretAuditor{}
+	s := secrets.Secret{
+		SecretRef:  "https://kms/v1/secrets/abc-123",
+		Name:       "key",
+		SecretType: "private",
+	}
+
+	rule := &policy.Rule{
+		Name:  "private-keys",
+		Check: policy.CheckConditions{SecretType: "private"},
+	}
+
+	result, err := auditor.Check(context.Background(), s, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for matching secret_type")
 	}
 }
 

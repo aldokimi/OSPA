@@ -3,6 +3,7 @@ package barbican
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -24,8 +25,12 @@ func (a secretAdapter) GetUpdatedAt() time.Time { return a.s.Updated }
 
 // SecretAuditor audits barbican/secret resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: status, age_gt, unused, exempt_names, secret_type
 // Allowed actions: log, delete, tag
+//
+// #100: when age_gt matches (optionally filtered by secret_type), observations
+// use the stale_secret_material semantic outcome. Barbican has no dedicated
+// "last rotated" field — freshness uses Updated/Created timestamps.
 type SecretAuditor struct{}
 
 func (a *SecretAuditor) ResourceType() string {
@@ -33,7 +38,7 @@ func (a *SecretAuditor) ResourceType() string {
 }
 
 func (a *SecretAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "secret_type"}
 }
 
 func (a *SecretAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -52,9 +57,39 @@ func (a *SecretAuditor) Check(ctx context.Context, resource interface{}, rule *p
 		return result, err
 	}
 
+	if rule.Check.SecretType != "" && !strings.EqualFold(s.SecretType, rule.Check.SecretType) {
+		// AND semantics: type filter missed — do not flag (clear age/status hits).
+		result.Compliant = true
+		result.Observation = ""
+		return result, nil
+	}
+
 	if rule.Check.Unused && !s.Expiration.IsZero() && time.Now().After(s.Expiration) {
 		result.Compliant = false
 		result.Observation = fmt.Sprintf("secret expired at %s", s.Expiration.Format(time.RFC3339))
+	}
+
+	// secret_type alone (no other matching domain checks yet) flags the type.
+	if rule.Check.SecretType != "" && result.Compliant &&
+		rule.Check.Status == "" && rule.Check.AgeGT == "" && !rule.Check.Unused {
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("secret_type=%s", s.SecretType)
+	}
+
+	// #100 semantic outcome: age-based freshness risk (no rotation metadata in API).
+	if !result.Compliant && rule.Check.AgeGT != "" {
+		ts := s.Updated
+		if ts.IsZero() {
+			ts = s.Created
+		}
+		typeLabel := s.SecretType
+		if typeLabel == "" {
+			typeLabel = "unknown"
+		}
+		result.Observation = fmt.Sprintf(
+			"stale_secret_material: secret_type=%q older than %s (last updated: %s; no rotation metadata in API)",
+			typeLabel, rule.Check.AgeGT, ts.Format(time.RFC3339),
+		)
 	}
 
 	return result, nil

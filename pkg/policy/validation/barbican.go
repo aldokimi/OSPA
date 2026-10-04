@@ -21,7 +21,7 @@ func (v *BarbicanValidator) ValidateResource(check *policy.CheckConditions, reso
 	switch resourceType {
 
 	case "secret":
-		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names"}); err != nil {
+		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names", "secret_type"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

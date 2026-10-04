@@ -16,7 +16,13 @@ This guide explains how to write policies for Barbican resources in OSPA.
 **Resource Type:** `secret`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** status, age_gt, unused, exempt_names, secret_type
+
+#### Security & Domain Checks
+
+| Check | Severity | Category | Type | Description |
+|-------|----------|----------|------|-------------|
+| **`secret_type`** | high | security | string | Match Barbican `secret_type` (e.g. `passphrase`, `private`, `certificate`, `opaque`). Combined with `age_gt`, yields `stale_secret_material` observations (freshness approximated via Updated/Created; API has no rotation field). |
 
 
 ### Container
