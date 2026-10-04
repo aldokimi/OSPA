@@ -10,27 +10,23 @@ import (
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/groups"
+	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 )
 
 type groupAdapter struct{ g groups.Group }
 
 func (a groupAdapter) GetID() string           { return a.g.ID }
 func (a groupAdapter) GetName() string         { return a.g.Name }
-func (a groupAdapter) GetProjectID() string    { return "" } // groups are not project-scoped
-func (a groupAdapter) GetStatus() string       { return "" } // groups have no status
+func (a groupAdapter) GetProjectID() string    { return "" }
+func (a groupAdapter) GetStatus() string       { return "" }
 func (a groupAdapter) GetCreatedAt() time.Time { return time.Time{} }
 func (a groupAdapter) GetUpdatedAt() time.Time { return time.Time{} }
 
 // GroupAuditor audits keystone/group resources.
 //
-// Allowed checks: age_gt, unused, exempt_names
-// Allowed actions: log, delete, tag
-//
-// Note: keystone's v3 Group has no timestamp or status fields, so age_gt
-// is accepted for policy consistency but is a no-op. Determining whether a
-// group has any members requires a separate API call per group, which
-// Check() cannot do without a client, so unused is left as a pending
-// observation.
+// Allowed checks: age_gt, unused, exempt_names, mfa_enabled
+// mfa_enabled and unused enumerate group members via the service client in
+// context (audit.WithClient).
 type GroupAuditor struct{}
 
 func (a *GroupAuditor) ResourceType() string {
@@ -38,12 +34,10 @@ func (a *GroupAuditor) ResourceType() string {
 }
 
 func (a *GroupAuditor) ImplementedChecks() []string {
-	return []string{"age_gt", "unused", "exempt_names"}
+	return []string{"age_gt", "unused", "exempt_names", "mfa_enabled"}
 }
 
 func (a *GroupAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
-	_ = ctx
-
 	g, ok := resource.(groups.Group)
 	if !ok {
 		return nil, fmt.Errorf("expected groups.Group, got %T", resource)
@@ -57,8 +51,35 @@ func (a *GroupAuditor) Check(ctx context.Context, resource interface{}, rule *po
 		return result, err
 	}
 
-	if rule.Check.Unused {
-		result.Observation = "unused check pending - requires group member enumeration"
+	needsMembers := rule.Check.Unused || rule.Check.MFAEnabled != nil
+	var members []users.User
+	if needsMembers {
+		members, err = listGroupUsers(ctx, g.ID)
+		if err != nil {
+			result.Observation = fmt.Sprintf("group relationship check failed: %v", err)
+			return result, nil
+		}
+	}
+
+	if rule.Check.Unused && len(members) == 0 {
+		result.Compliant = false
+		result.Observation = "group has no members"
+	}
+
+	if rule.Check.MFAEnabled != nil && *rule.Check.MFAEnabled {
+		var withoutMFA []string
+		for _, m := range members {
+			if !userMFAEnabled(m) {
+				withoutMFA = append(withoutMFA, m.Name)
+			}
+		}
+		if len(withoutMFA) > 0 {
+			result.Compliant = false
+			result.Observation = fmt.Sprintf(
+				"group_members_no_mfa: group %q has members without MFA: %v",
+				g.Name, withoutMFA,
+			)
+		}
 	}
 
 	return result, nil

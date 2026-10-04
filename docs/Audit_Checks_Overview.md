@@ -82,13 +82,14 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 
 - **Supported Resources:** `user`, `role`, `project`, `domain`, `group`, `service`
 - **Existing Checks:**
-  - `user` (**implemented**): `password_expired`, `mfa_enabled`, `has_admin_role` (role-assignment enumeration via client in Check context; role name `admin`) + common
-  - `role` / `group`: `age_gt/unused/exempt_names` only (**no `status`** — overview previously overstated)
+  - `user` (**implemented**): `password_expired`, `mfa_enabled`, `has_admin_role`, `admin_via_group` + common
+  - `group` (**implemented**): `age_gt`, `unused` (member enumeration), `exempt_names`, `mfa_enabled` (member MFA sampling)
+  - `role`: `age_gt/unused/exempt_names` only (**no `status`**)
   - `project` / `domain` / `service`: common as declared
 - **Gaps / enhancements (verified):**
   - **DONE (#105):** live `has_admin_role` + `high_privilege_no_mfa` when combined with `mfa_enabled` violation.
   - **DONE (#111):** `expired_password_no_mfa` observation when `password_expired` and `mfa_enabled` both fire.
-  - **REAL:** MFA/posture for service users/groups at scale and admin-role inheritance need relationship model inputs (#117).
+  - **DONE (#117):** group member MFA sampling, `admin_via_group` user check, composite `service_account_no_mfa`.
 
 ### 6. Heat (`heat` / orchestration) — Live
 
