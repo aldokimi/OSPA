@@ -22,6 +22,49 @@ Stack status is the API's `stack_status` field (e.g. `CREATE_COMPLETE`,
 `CREATE_FAILED`, `UPDATE_IN_PROGRESS`, `DELETE_COMPLETE`). There is no
 "in use" signal for a stack, so `unused` is not offered.
 
+#### Orphaned / leftover cleanup without `unused` (#118)
+
+Heat cannot express “orphaned” via an in-use bit. Prefer these signals instead:
+
+1. **Status-based cleanup** — failed or stuck stacks (`CREATE_FAILED`, `UPDATE_FAILED`, `DELETE_FAILED`)
+2. **Age thresholds** — old complete stacks (`age_gt`) candidates for teardown
+3. **Dependency-aware delete** — remediate via parent `stack` delete only (resources/templates are log-only)
+
+Example:
+
+```yaml
+policies:
+  - heat:
+    - name: failed-stacks
+      description: Failed stacks awaiting cleanup
+      service: heat
+      resource: stack
+      check:
+        status: CREATE_FAILED
+      action: log
+      severity: high
+      category: hygiene
+    - name: old-complete-stacks
+      description: Stacks older than 90 days
+      service: heat
+      resource: stack
+      check:
+        status: CREATE_COMPLETE
+        age_gt: 90d
+      action: log
+      severity: medium
+      category: cost
+composites:
+  - heat:
+    - name: failed-stack-root-cause
+      description: Failed stack with failed sub-resources
+      service: heat
+      resources: [stack, resource]
+      check:
+        pattern: failed_stack_root_cause
+      action: log
+```
+
 
 ### Resource
 
