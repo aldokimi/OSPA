@@ -26,7 +26,7 @@ func (v *DesignateValidator) ValidateResource(check *policy.CheckConditions, res
 		}
 
 	case "recordset":
-		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names"}); err != nil {
+		if err := validateAllowedChecks(check, []string{"status", "age_gt", "unused", "exempt_names", "record_type"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

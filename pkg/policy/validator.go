@@ -209,7 +209,8 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.HasAdminRole ||
 		check.TokenProvider != "" ||
 		check.QuotaSet != nil ||
-		check.SecretType != ""
+		check.SecretType != "" ||
+		check.RecordType != ""
 }
 
 func hasCompositeCheck(check map[string]interface{}) bool {

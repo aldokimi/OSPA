@@ -2,6 +2,7 @@ package designate
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
@@ -48,6 +49,50 @@ func TestRecordsetAuditor_Check_Unused(t *testing.T) {
 	}
 	if result.Compliant {
 		t.Error("Check() expected non-compliant for empty recordset")
+	}
+}
+
+func TestRecordsetAuditor_Check_RecordType_A_RiskyExposure(t *testing.T) {
+	auditor := &RecordsetAuditor{}
+	rs := recordsets.RecordSet{
+		ID:      "rs-123",
+		Name:    "www.example.com.",
+		Type:    "A",
+		Records: []string{"203.0.113.10"},
+	}
+
+	rule := &policy.Rule{
+		Name:  "find-a-records",
+		Check: policy.CheckConditions{RecordType: "A"},
+	}
+
+	result, err := auditor.Check(context.Background(), rs, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for A recordset")
+	}
+	if !strings.Contains(result.Observation, "risky_dns_exposure") {
+		t.Fatalf("expected risky_dns_exposure observation, got %q", result.Observation)
+	}
+}
+
+func TestRecordsetAuditor_Check_RecordType_Miss(t *testing.T) {
+	auditor := &RecordsetAuditor{}
+	rs := recordsets.RecordSet{ID: "rs-123", Name: "www.example.com.", Type: "TXT", Records: []string{"v=spf1"}}
+
+	rule := &policy.Rule{
+		Name:  "find-a-records",
+		Check: policy.CheckConditions{RecordType: "A"},
+	}
+
+	result, err := auditor.Check(context.Background(), rs, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if !result.Compliant {
+		t.Fatalf("expected compliant for TXT when looking for A, got %q", result.Observation)
 	}
 }
 

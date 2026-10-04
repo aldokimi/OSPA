@@ -3,6 +3,7 @@ package designate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -23,8 +24,10 @@ func (a recordsetAdapter) GetUpdatedAt() time.Time { return a.rs.UpdatedAt }
 
 // RecordsetAuditor audits designate/recordset resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: status, age_gt, unused, exempt_names, record_type
 // Allowed actions: log, delete, tag
+//
+// #101: record_type matches SDK Type; A/AAAA matches emit risky_dns_exposure.
 type RecordsetAuditor struct{}
 
 func (a *RecordsetAuditor) ResourceType() string {
@@ -32,7 +35,7 @@ func (a *RecordsetAuditor) ResourceType() string {
 }
 
 func (a *RecordsetAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "record_type"}
 }
 
 func (a *RecordsetAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -54,6 +57,29 @@ func (a *RecordsetAuditor) Check(ctx context.Context, resource interface{}, rule
 	if rule.Check.Unused && len(rs.Records) == 0 {
 		result.Compliant = false
 		result.Observation = "recordset has no records"
+	}
+
+	if rule.Check.RecordType != "" {
+		if !strings.EqualFold(rs.Type, rule.Check.RecordType) {
+			// AND semantics with other checks.
+			if rule.Check.Status == "" && rule.Check.AgeGT == "" && !rule.Check.Unused {
+				return result, nil
+			}
+			result.Compliant = true
+			result.Observation = ""
+			return result, nil
+		}
+		result.Compliant = false
+		typeUpper := strings.ToUpper(rs.Type)
+		switch typeUpper {
+		case "A", "AAAA":
+			result.Observation = fmt.Sprintf(
+				"risky_dns_exposure: record_type=%s name=%s records=%v",
+				typeUpper, rs.Name, rs.Records,
+			)
+		default:
+			result.Observation = fmt.Sprintf("record_type=%s name=%s records=%v", typeUpper, rs.Name, rs.Records)
+		}
 	}
 
 	return result, nil
