@@ -68,17 +68,31 @@ func (a *VolumeAuditor) Check(ctx context.Context, resource interface{}, rule *p
 		result.Observation = "volume is not attached to any instance"
 	}
 
+	encHit := false
 	if rule.Check.Encrypted != nil && v.Encrypted != *rule.Check.Encrypted {
+		encHit = true
 		result.Compliant = false
 		result.Observation = "volume is not encrypted"
 	}
 
+	backupHit := false
+	hasBackup := v.BackupID != nil && *v.BackupID != ""
 	if rule.Check.HasBackup != nil {
-		hasBackup := v.BackupID != nil && *v.BackupID != ""
 		if hasBackup != *rule.Check.HasBackup {
+			backupHit = true
 			result.Compliant = false
 			result.Observation = "volume has no backup"
 		}
+	}
+
+	// #110 catalog outcome when encryption + backup posture checks both fire.
+	// Example policy: encrypted: true (require encryption) + has_backup: false
+	// (flag volumes that already have a backup) → unencrypted volume with backup.
+	if encHit && backupHit {
+		result.Observation = fmt.Sprintf(
+			"unencrypted_volume_backup_risk: encrypted=%t has_backup=%t",
+			v.Encrypted, hasBackup,
+		)
 	}
 
 	return result, nil

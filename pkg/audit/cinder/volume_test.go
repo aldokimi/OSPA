@@ -2,6 +2,7 @@ package cinder
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	discoveryservices "github.com/OpenStack-Policy-Agent/OSPA/pkg/discovery/services"
@@ -121,6 +122,36 @@ func TestVolumeAuditor_Check_HasBackup(t *testing.T) {
 	}
 	if result.Compliant {
 		t.Error("Check() expected non-compliant for volume with no backup")
+	}
+}
+
+func TestVolumeAuditor_Check_UnencryptedVolumeBackupRisk(t *testing.T) {
+	auditor := &VolumeAuditor{}
+	backupID := "backup-1"
+	v := newVolume(func(v *discoveryservices.VolumeWithTenant) {
+		v.Encrypted = false
+		v.BackupID = &backupID
+	})
+
+	requireEnc := true
+	requireNoBackupFlag := false // flag volumes that DO have a backup
+	rule := &policy.Rule{
+		Name: "unencrypted-with-backup",
+		Check: policy.CheckConditions{
+			Encrypted: &requireEnc,
+			HasBackup: &requireNoBackupFlag,
+		},
+	}
+
+	result, err := auditor.Check(context.Background(), v, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for unencrypted volume with backup")
+	}
+	if !strings.Contains(result.Observation, "unencrypted_volume_backup_risk") {
+		t.Fatalf("expected unencrypted_volume_backup_risk observation, got %q", result.Observation)
 	}
 }
 
