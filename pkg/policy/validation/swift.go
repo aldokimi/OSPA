@@ -26,7 +26,7 @@ func (v *SwiftValidator) ValidateResource(check *policy.CheckConditions, resourc
 		}
 
 	case "container":
-		if err := validateAllowedChecks(check, []string{"unused", "exempt_names"}); err != nil {
+		if err := validateAllowedChecks(check, []string{"unused", "exempt_names", "is_public", "public_write"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

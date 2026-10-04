@@ -13,10 +13,12 @@ import (
 // ObjectWithContainer carries the parent container name alongside an
 // objects.Object, since gophercloud's object listing (and Delete call) is
 // always scoped to one container and the Object struct alone doesn't carry
-// that association.
+// that association. ContainerPublicRead is set when the parent container
+// has a world-readable ACL (for composite exposure checks).
 type ObjectWithContainer struct {
 	objects.Object
-	ContainerName string
+	ContainerName       string
+	ContainerPublicRead bool
 }
 
 // SwiftAccountDiscoverer discovers the swift/account resource.
@@ -82,6 +84,14 @@ func (d *SwiftContainerDiscoverer) Discover(ctx context.Context, client *gopherc
 		}
 
 		for _, c := range containerList {
+			if ctx.Err() != nil {
+				return
+			}
+			withACL := ContainerWithACL{Container: c}
+			if header, err := containers.Get(client, c.Name, containers.GetOpts{}).Extract(); err == nil && header != nil {
+				withACL.ReadACL = header.Read
+				withACL.WriteACL = header.Write
+			}
 			select {
 			case <-ctx.Done():
 				return
@@ -89,7 +99,7 @@ func (d *SwiftContainerDiscoverer) Discover(ctx context.Context, client *gopherc
 				Service:      "swift",
 				ResourceType: "container",
 				ResourceID:   c.Name,
-				Resource:     c,
+				Resource:     withACL,
 			}:
 			}
 		}
@@ -130,6 +140,11 @@ func (d *SwiftObjectDiscoverer) Discover(ctx context.Context, client *gopherclou
 				return
 			}
 
+			publicRead := false
+			if header, err := containers.Get(client, c.Name, containers.GetOpts{}).Extract(); err == nil && header != nil {
+				publicRead = ACLAllowsWorldRead(header.Read)
+			}
+
 			objectPages, err := objects.List(client, c.Name, objects.ListOpts{Full: true}).AllPages()
 			if err != nil {
 				continue
@@ -148,7 +163,11 @@ func (d *SwiftObjectDiscoverer) Discover(ctx context.Context, client *gopherclou
 					Service:      "swift",
 					ResourceType: "object",
 					ResourceID:   c.Name + "/" + o.Name,
-					Resource:     ObjectWithContainer{Object: o, ContainerName: c.Name},
+					Resource: ObjectWithContainer{
+						Object:              o,
+						ContainerName:       c.Name,
+						ContainerPublicRead: publicRead,
+					},
 				}:
 				}
 			}

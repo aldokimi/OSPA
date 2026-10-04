@@ -28,7 +28,7 @@ and the log action apply.
 **Resource Type:** `container`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** unused, exempt_names
+**Allowed Checks:** unused, exempt_names, is_public, public_write
 
 Containers carry no status or timestamp fields, so the available
 checks are unused (empty container) and exempt_names.
