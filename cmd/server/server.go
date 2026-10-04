@@ -271,7 +271,7 @@ func (s *server) loadPolicyFromRequest(r *http.Request) (*policy.Policy, string,
 	}
 
 	if file, hdr, err := r.FormFile("policy_file"); err == nil {
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		b, err := io.ReadAll(io.LimitReader(file, 4<<20))
 		if err != nil {
 			return nil, "", err
