@@ -6,7 +6,8 @@
 ## Supported Resources
 
 ### Share (`share`)
-- Checks: `status`, `age_gt`, `unused`, `exempt_names`
+- Checks: `status`, `age_gt`, `unused`, `exempt_names`, `is_public`
+- Note: encryption-at-rest/in-transit is not exposed on the share API (API-audit model gap).
 - Actions: `log`, `delete`
 
 ### Share Snapshot (`share_snapshot`)

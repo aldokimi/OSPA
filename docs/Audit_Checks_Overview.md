@@ -123,12 +123,13 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - **PARTIAL (#119):** richer type→risk classification (algorithm/content-types) and usage/policy pairing still open.
   - **REAL (API-audit model):** no dedicated “last rotated” field.
 
-### 10. Manila (`manila` / shared-file-systems) — Stub
+### 10. Manila (`manila` / shared-file-systems) — Live (hygiene + visibility)
 
 - **Supported Resources:** `share`, `share_snapshot`, `share_network`, `share_server`
-- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Existing Checks (implemented):** hygiene as declared; share `is_public`
 - **Gaps / enhancements (verified):**
-  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
+  - **DONE (#116):** live discovery + hygiene; share `is_public` check.
+  - **API-audit model gap:** encryption-at-rest/in-transit not on share API.
   - **REAL (missed implementable once live):** `is_public` / share visibility posture.
   - **PARTIAL / availability:** dedicated encryption-at-rest/in-transit fields are not clearly exposed on the share struct — confirm API before promising encryption composites.
 
