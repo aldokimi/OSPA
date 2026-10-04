@@ -184,7 +184,7 @@ func (e *TestEngine) GetOctaviaClient(t *testing.T) *gophercloud.ServiceClient {
 	t.Helper()
 	client, err := e.Session.GetOctaviaClient()
 	if err != nil {
-		t.Fatalf("Failed to get octavia client: %v", err)
+		skipOrFail(t, "octavia", err)
 	}
 	return client
 }

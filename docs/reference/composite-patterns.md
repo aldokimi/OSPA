@@ -19,6 +19,8 @@ outcomes) into high-signal compliance findings.
 | `risky_dns_exposure` | designate | recordset `record_type` | Atomic observation (#101) |
 | `failed_stack_root_cause` | heat | stack + resource linkage (`StackName`, status reasons) | **Registered** (#104/#114) |
 | `public_image_cross_tenant_exposure` | glance | image + member | **Registered** (#113) |
+| `insecure_listener_tls` | octavia | listener atomics (`protocol`/`port`/`tls_ciphers`/`has_tls_container`) | Atomic observation (#122) |
+| `insecure_public_listener` | octavia | loadbalancer + listener (world CIDR + insecure protocol/TLS) | **Registered** (#122) |
 
 ## AND-in-one-rule vs true composites
 

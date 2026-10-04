@@ -162,6 +162,13 @@ type CheckConditions struct {
 	ConsoleEnabled *bool `yaml:"console_enabled,omitempty"`
 	// BootInterface matches nodes.Node.BootInterface (e.g. pxe, ipxe, redfish-virtual-media).
 	BootInterface string `yaml:"boot_interface,omitempty"`
+
+	// --- Octavia checks ---
+
+	// TlsCiphers matches listener tls_ciphers (OpenSSL colon-separated list).
+	TlsCiphers string `yaml:"tls_ciphers,omitempty"`
+	// HasTlsContainer matches whether DefaultTlsContainerRef is non-empty.
+	HasTlsContainer *bool `yaml:"has_tls_container,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -282,6 +289,12 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.BootInterface != "" {
 		used = append(used, "boot_interface")
+	}
+	if c.TlsCiphers != "" {
+		used = append(used, "tls_ciphers")
+	}
+	if c.HasTlsContainer != nil {
+		used = append(used, "has_tls_container")
 	}
 	return used
 }

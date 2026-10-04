@@ -212,7 +212,9 @@ func hasAnyConstraint(check *CheckConditions) bool {
 		check.SecretType != "" ||
 		check.RecordType != "" ||
 		check.ConsoleEnabled != nil ||
-		check.BootInterface != ""
+		check.BootInterface != "" ||
+		check.TlsCiphers != "" ||
+		check.HasTlsContainer != nil
 }
 
 func hasCompositeCheck(check map[string]interface{}) bool {
