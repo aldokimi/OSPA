@@ -28,7 +28,7 @@ func (v *MagnumValidator) ValidateResource(check *policy.CheckConditions, resour
 
 	// Cluster templates expose only creation/updated timestamps.
 	case "cluster_template":
-		if err := validateAllowedChecks(check, []string{"age_gt", "exempt_names"}); err != nil {
+		if err := validateAllowedChecks(check, []string{"age_gt", "exempt_names", "tls_disabled", "network_driver"}); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 

@@ -39,6 +39,30 @@ func TestClusterTemplateAuditor_Check_AgeGT(t *testing.T) {
 	}
 }
 
+func TestClusterTemplateAuditor_Check_TlsDisabled(t *testing.T) {
+	auditor := &ClusterTemplateAuditor{}
+	wantDisabled := false
+	tmpl := discoveryservices.MagnumClusterTemplate{
+		ID:          "t2",
+		Name:        "insecure-k8s",
+		TLSDisabled: true,
+		COE:         "kubernetes",
+	}
+
+	rule := &policy.Rule{
+		Name:  "require-tls",
+		Check: policy.CheckConditions{TlsDisabled: &wantDisabled},
+	}
+
+	result, err := auditor.Check(context.Background(), tmpl, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant when tls_disabled=true but policy requires false")
+	}
+}
+
 func TestClusterTemplateAuditor_Check_ExemptName(t *testing.T) {
 	auditor := &ClusterTemplateAuditor{}
 	old := time.Now().Add(-60 * 24 * time.Hour)
