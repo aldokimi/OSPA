@@ -2,13 +2,22 @@
 
 This guide covers how to configure OSPA to connect to your OpenStack cloud.
 
-## OpenStack Credentials
+## CLI vs Web UI
 
-OSPA uses the standard OpenStack client configuration via `clouds.yaml`.
+| Interface | How credentials work |
+|-----------|----------------------|
+| **CLI** (`cmd/agent`) | Standard OpenStack `clouds.yaml` + `--cloud` / `OS_CLOUD` |
+| **Web UI** (`cmd/server`) | **Profiles** — remote Keystone credentials, or an opt-in local `clouds.yaml` entry. The UI never auto-connects. |
+
+For the browser UI, see [Web UI](../user-guide/web-ui.md). The rest of this page describes CLI / `clouds.yaml` configuration.
+
+## OpenStack Credentials (CLI)
+
+The agent uses the standard OpenStack client configuration via `clouds.yaml`.
 
 ### Environment Variables
 
-Set these environment variables before running OSPA:
+Set these environment variables before running the CLI agent:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -157,6 +166,20 @@ go run ./cmd/agent \
   --policy examples/policies.yaml \
   --out /dev/null
 ```
+
+## Web UI profiles
+
+The UI stores saved profiles (including remote passwords) at:
+
+```text
+~/.config/ospa/profiles.json   # created with mode 0600
+```
+
+- Remote profiles authenticate with explicit Keystone fields (no `clouds.yaml` required).
+- Local profiles list names from `clouds.yaml` on the UI host, but only after you grant permission and click **Connect**.
+- `OS_CLOUD` is **not** applied automatically when you open the UI.
+
+Details: [Web UI — Cloud profiles](../user-guide/web-ui.md#cloud-profiles).
 
 ## Troubleshooting
 

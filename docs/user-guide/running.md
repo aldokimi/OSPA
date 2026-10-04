@@ -2,8 +2,10 @@
 
 This guide covers how to run OSPA in different modes and configurations.
 
+To manage clouds and audits from a browser instead, see [Web UI](web-ui.md). The CLI still uses `clouds.yaml` as described below.
+
 ## Environment Variables
-Those variables should be available in the system in order for the OSPA command to work.
+Those variables should be available in the system in order for the OSPA **CLI** agent to work.
 
 | Variable | Description |
 |----------|-------------|

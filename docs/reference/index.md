@@ -6,7 +6,8 @@ Welcome to the reference documentation for OSPA (OpenStack Policy Automation). H
 
 - [Resource Catalog](catalog.md) — All OpenStack resources OSPA can audit
 - [Policy Schema](policy-schema.md) — Policy structure and schema reference
-- [CLI Reference](cli.md) — Command-line interface documentation
+- [CLI Reference](cli.md) — Agent, server (Web UI), and scaffold commands
+- [Web UI](../user-guide/web-ui.md) — Profiles, dashboard, runs, and Policy Studio
 - [OpenStack Security Guide Compliance Matrix](security-guide-compliance.md) — Coverage of OSPA vs. the OpenStack Security Guide checklists
 
 ## About These Guides

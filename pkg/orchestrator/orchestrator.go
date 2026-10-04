@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/auth"
@@ -43,9 +40,20 @@ type Orchestrator struct {
 	compositeLock      sync.Mutex
 }
 
-// NewOrchestrator creates a new orchestrator
+// NewOrchestrator creates a new orchestrator with a background context.
+// Prefer NewOrchestratorWithContext when the caller owns cancellation
+// (CLI signal handling, HTTP request/run lifecycle).
 func NewOrchestrator(p *policy.Policy, session *auth.Session, workers int, apply, allTenants bool) *Orchestrator {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	return NewOrchestratorWithContext(context.Background(), p, session, workers, apply, allTenants)
+}
+
+// NewOrchestratorWithContext creates a new orchestrator cancelled when parent is done
+// or when Stop is called.
+func NewOrchestratorWithContext(parent context.Context, p *policy.Policy, session *auth.Session, workers int, apply, allTenants bool) *Orchestrator {
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithCancel(parent)
 
 	return &Orchestrator{
 		policy:             p,

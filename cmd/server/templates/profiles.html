@@ -1,0 +1,141 @@
+{{define "profiles"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Cloud profiles</h1>
+      <p class="muted">Save remote credentials or opt in to a local <span class="mono">clouds.yaml</span> entry. OSPA never connects until you choose Connect.</p>
+      {{if .Flash}}<div class="flash ok">{{.Flash}}</div>{{end}}
+      {{template "connection_banner" .}}
+      {{if .Connected}}
+      <form method="post" action="/profiles/disconnect" style="margin-top:0.75rem">
+        <button type="submit" class="secondary">Disconnect</button>
+      </form>
+      {{end}}
+    </section>
+
+    <section class="grid-2">
+      <section class="panel">
+        <h2>Add remote cloud</h2>
+        <p class="muted">Keystone credentials for a cloud you manage over the network.</p>
+        <form method="post" action="/profiles/remote" class="stack-form">
+          <div class="field">
+            <label for="name">Profile name</label>
+            <input id="name" name="name" type="text" placeholder="prod-east">
+          </div>
+          <div class="field">
+            <label for="auth_url">Auth URL</label>
+            <input id="auth_url" name="auth_url" type="text" required placeholder="https://keystone.example:5000/v3">
+          </div>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required>
+          </div>
+          <div class="field">
+            <label for="project_name">Project name</label>
+            <input id="project_name" name="project_name" type="text">
+          </div>
+          <div class="field">
+            <label for="project_id">Project ID</label>
+            <input id="project_id" name="project_id" type="text">
+          </div>
+          <div class="field">
+            <label for="user_domain_name">User domain</label>
+            <input id="user_domain_name" name="user_domain_name" type="text" value="Default">
+          </div>
+          <div class="field">
+            <label for="project_domain_name">Project domain</label>
+            <input id="project_domain_name" name="project_domain_name" type="text" value="Default">
+          </div>
+          <div class="field">
+            <label for="region_name">Region</label>
+            <input id="region_name" name="region_name" type="text">
+          </div>
+          <div class="checks">
+            <label><input type="checkbox" name="connect_now" value="1" checked> Connect after save</label>
+          </div>
+          <button type="submit">Save remote profile</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Use local clouds.yaml</h2>
+        <p class="muted">Entries on this machine are listed below. Nothing connects until you confirm.</p>
+        {{if .HasLocalClouds}}
+        <form method="post" action="/profiles/local" class="stack-form">
+          <div class="field">
+            <label for="local_cloud">Local cloud</label>
+            <select id="local_cloud" name="local_cloud" required>
+              {{range .LocalClouds}}
+              <option value="{{.}}">{{.}}</option>
+              {{end}}
+            </select>
+          </div>
+          <div class="field">
+            <label for="local_name">Profile name (optional)</label>
+            <input id="local_name" name="name" type="text" placeholder="local:devstack">
+          </div>
+          <div class="checks">
+            <label><input type="checkbox" name="confirm_local" value="1" required> I allow OSPA to use this local clouds.yaml entry</label>
+          </div>
+          <div class="checks">
+            <label><input type="checkbox" name="connect_now" value="1" checked> Connect after save</label>
+          </div>
+          <button type="submit">Save local profile</button>
+        </form>
+        {{else}}
+        <p class="muted">No <span class="mono">clouds.yaml</span> entries found on this host.</p>
+        {{end}}
+      </section>
+    </section>
+
+    <section class="panel">
+      <h2>Saved profiles</h2>
+      {{if .Profiles}}
+      <div class="profile-list">
+        {{range .Profiles}}
+        <article class="profile-card {{if eq .ID $.ActiveID}}active{{end}}">
+          <div class="profile-card-top">
+            <div>
+              <h3>{{.Name}}</h3>
+              <p class="muted mono">
+                {{if eq .Source "local"}}local · {{.LocalCloud}}{{else}}remote · {{.AuthURL}}{{end}}
+              </p>
+            </div>
+            <span class="badge {{if eq .ID $.ActiveID}}ok{{end}}">{{.Source}}{{if eq .ID $.ActiveID}} · connected{{end}}</span>
+          </div>
+          <div class="row">
+            {{if eq .Source "local"}}
+            <form method="post" action="/profiles/{{.ID}}/connect" class="row">
+              <div class="checks">
+                <label><input type="checkbox" name="confirm_local" value="1" required> Allow local connect</label>
+              </div>
+              <button type="submit">Connect</button>
+            </form>
+            {{else}}
+            <form method="post" action="/profiles/{{.ID}}/connect">
+              <button type="submit">Connect</button>
+            </form>
+            {{end}}
+            <form method="post" action="/profiles/{{.ID}}/delete" onsubmit="return confirm('Delete this profile?')">
+              <button type="submit" class="secondary">Delete</button>
+            </form>
+          </div>
+        </article>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="muted">No profiles yet. Add a remote cloud or opt in to a local entry above.</p>
+      {{end}}
+    </section>
+  </div>
+</body>
+</html>
+{{end}}

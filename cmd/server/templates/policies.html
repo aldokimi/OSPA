@@ -1,0 +1,312 @@
+{{define "policies"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+  <div class="shell wide">
+    {{template "nav" .}}
+    <section class="panel">
+      <h1>Policy studio</h1>
+      <p class="muted">Pick a resource type on the left to <strong>create a new rule</strong>. Existing rules stay listed below as cards.</p>
+    </section>
+
+    <section class="panel">
+      <form class="row" hx-post="/policies/load" hx-target="#studio-swap" hx-swap="innerHTML">
+        <input type="hidden" name="nav_service" value="{{.SelectedService}}">
+        <input type="hidden" name="nav_resource" value="{{.SelectedResource}}">
+        <div class="field" style="flex:2">
+          <label for="policy_path">Load from path</label>
+          <input id="policy_path" name="policy_path" type="text" value="{{.DraftPath}}" placeholder="./examples/policies.yaml">
+        </div>
+        <button type="submit">Load into cards</button>
+        <button type="button" class="secondary"
+                hx-post="/policies/save"
+                hx-include="#policy_path"
+                hx-target="#validate-result">Save to path</button>
+      </form>
+    </section>
+
+    <div id="studio-swap">
+      {{template "policy_studio_shell" .}}
+    </div>
+
+    <section class="panel">
+      <h2>YAML <span class="muted" style="font-weight:400;font-size:0.9rem">(advanced)</span></h2>
+      <details>
+        <summary>Show / edit raw YAML</summary>
+        <form id="yaml-form" class="row" style="margin-top:0.75rem;display:block" method="post" action="/runs/from-yaml">
+          <input type="hidden" name="source" value="body">
+          <textarea id="policy_yaml" name="policy_yaml">{{.SampleYAML}}</textarea>
+          {{template "connection_banner" .}}
+          <div class="row" style="margin-top:0.75rem">
+            <div class="checks">
+              <label><input type="checkbox" name="all_tenants" value="1"> All tenants</label>
+            </div>
+            <button type="button" class="secondary"
+                    hx-post="/policies/sync-yaml"
+                    hx-include="#policy_yaml"
+                    hx-target="#studio-swap"
+                    hx-swap="innerHTML">Apply YAML → cards</button>
+            <button type="button" class="secondary"
+                    hx-post="/policies/validate"
+                    hx-target="#validate-result"
+                    hx-include="#yaml-form">Validate</button>
+            <button type="submit" {{if not .Connected}}disabled{{end}}>Start dry-run</button>
+          </div>
+        </form>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>Result</h2>
+      <div id="validate-result"><p class="muted">Validation and save messages appear here.</p></div>
+    </section>
+  </div>
+</body>
+</html>
+{{end}}
+
+{{define "policy_studio_update"}}
+{{template "policy_studio_shell" .}}
+<textarea id="policy_yaml" name="policy_yaml" hx-swap-oob="true">{{.SampleYAML}}</textarea>
+{{end}}
+
+{{define "policy_studio_shell"}}
+<div class="studio-layout">
+  <aside class="policy-nav panel">
+    <div class="policy-nav-head">
+      <h2>Create new rule</h2>
+      <a class="muted" href="/policies"
+         hx-get="/policies/workspace"
+         hx-target="#studio-swap"
+         hx-swap="innerHTML"
+         hx-push-url="/policies">Clear</a>
+    </div>
+    <p class="muted" style="margin:0 0 0.75rem;font-size:0.85rem">Select a type to start a new rule — this does not edit existing cards.</p>
+    {{range .NavServices}}
+    <details class="nav-svc" {{if .Expanded}}open{{end}}>
+      <summary>
+        <span>{{.Name}}</span>
+        {{if .Count}}<span class="nav-count">{{.Count}}</span>{{end}}
+      </summary>
+      <ul>
+        {{range .Resources}}
+        <li>
+          <a href="/policies?service={{.Service}}&resource={{.Resource}}"
+             class="nav-type {{if .Selected}}active{{end}}"
+             hx-get="/policies/workspace?service={{.Service}}&resource={{.Resource}}"
+             hx-target="#studio-swap"
+             hx-swap="innerHTML"
+             hx-push-url="true">
+            <span>{{.Resource}}</span>
+            <span class="nav-meta">
+              {{if .RuleCount}}<span class="nav-count">{{.RuleCount}}</span>{{end}}
+              <span class="nav-checks">{{len .Checks}} checks</span>
+            </span>
+          </a>
+        </li>
+        {{end}}
+      </ul>
+    </details>
+    {{end}}
+  </aside>
+  <div id="policy-workspace">
+    {{template "policy_workspace" .}}
+  </div>
+</div>
+{{end}}
+
+{{define "policy_workspace"}}
+{{if .SelectedType}}
+<section class="panel create-panel">
+  <p class="create-eyebrow">Creating a new rule</p>
+  <h2>New {{.SelectedType.Service}} / {{.SelectedType.Resource}} rule</h2>
+  <p class="muted">Fill this form to add a <strong>new</strong> rule card. It will not change rules you already have.
+    Available checks:
+    {{range $i, $c := .SelectedType.Checks}}{{if $i}}, {{end}}<span class="mono">{{$c}}</span>{{end}}
+  </p>
+  <form class="rule-form" hx-post="/policies/rules" hx-target="#studio-swap" hx-swap="innerHTML">
+    <input type="hidden" name="service" value="{{.SelectedType.Service}}">
+    <input type="hidden" name="resource" value="{{.SelectedType.Resource}}">
+    <input type="hidden" name="nav_service" value="{{.SelectedType.Service}}">
+    <input type="hidden" name="nav_resource" value="{{.SelectedType.Resource}}">
+    <div class="row">
+      <div class="field">
+        <label for="name">New rule name</label>
+        <input id="name" name="name" type="text" required placeholder="{{.SelectedType.Resource}}-rule">
+      </div>
+      <div class="field" style="flex:1.5">
+        <label for="description">Description</label>
+        <input id="description" name="description" type="text" placeholder="What this new rule should find">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="action">Action</label>
+        <select id="action" name="action" required>
+          <option value="log">log</option>
+          <option value="delete">delete</option>
+          <option value="tag">tag</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="severity">Severity</label>
+        <select id="severity" name="severity">
+          <option value="">(none)</option>
+          <option value="critical">critical</option>
+          <option value="high">high</option>
+          <option value="medium">medium</option>
+          <option value="low">low</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          <option value="">(none)</option>
+          <option value="security">security</option>
+          <option value="compliance">compliance</option>
+          <option value="cost">cost</option>
+          <option value="hygiene">hygiene</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="guide_ref">Guide ref</label>
+        <input id="guide_ref" name="guide_ref" type="text" placeholder="OSSN-0011">
+      </div>
+    </div>
+
+    <h3 class="subhead">Checks for {{.SelectedType.Resource}}</h3>
+    {{if .SelectedType.Fields}}
+    <div class="check-fields">
+      {{range .SelectedType.Fields}}
+      <div class="field check-field kind-{{.Kind}}">
+        <label for="check_{{.Name}}">{{.Label}}</label>
+        {{if eq .Kind "bool"}}
+          <label class="inline-check"><input id="check_{{.Name}}" type="checkbox" name="check_{{.Name}}" value="1"> enable</label>
+        {{else if eq .Kind "bool_opt"}}
+          <select id="check_{{.Name}}" name="check_{{.Name}}">
+            <option value="">(unset)</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        {{else if eq .Kind "int"}}
+          <input id="check_{{.Name}}" name="check_{{.Name}}" type="number" placeholder="{{.Placeholder}}">
+        {{else}}
+          <input id="check_{{.Name}}" name="check_{{.Name}}" type="text" placeholder="{{.Placeholder}}">
+        {{end}}
+        {{if .Help}}<span class="field-help">{{.Help}}</span>{{end}}
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="flash err">No implemented checks for this resource type.</p>
+    {{end}}
+    <div class="row" style="margin-top:1rem">
+      <button type="submit">Create new rule</button>
+    </div>
+  </form>
+</section>
+{{else}}
+<section class="panel pick-type">
+  <h2>Create a new rule</h2>
+  <p class="muted">Choose a resource type in the left nav to open a blank create form. Shortcuts below jump to types that already have rules — you will still create a <strong>new</strong> rule.</p>
+  <div class="type-shortcuts">
+    {{range .NavServices}}
+      {{range .Resources}}
+        {{if .RuleCount}}
+        <a class="type-chip" href="/policies?service={{.Service}}&resource={{.Resource}}"
+           hx-get="/policies/workspace?service={{.Service}}&resource={{.Resource}}"
+           hx-target="#studio-swap" hx-swap="innerHTML" hx-push-url="true">
+          <strong class="mono">New {{.Service}}/{{.Resource}} rule</strong>
+          <span>{{.RuleCount}} existing · {{len .Checks}} checks available</span>
+        </a>
+        {{end}}
+      {{end}}
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="panel">
+  <div class="row" style="justify-content:space-between;align-items:baseline">
+    <h2 style="margin:0">
+      All rule cards
+      <span class="muted" style="font-weight:400">{{len .Rules}}</span>
+    </h2>
+    <span class="muted mono">{{.DraftPath}}</span>
+  </div>
+  {{if .SelectedType}}
+  <p class="muted" style="margin:0.5rem 0 0">
+    Creating new <span class="mono">{{.SelectedType.Service}}/{{.SelectedType.Resource}}</span> rule above.
+    {{.MatchingCount}} existing card{{if ne .MatchingCount 1}}s{{end}} of that type highlighted below.
+  </p>
+  {{end}}
+  <div class="rule-grid" style="margin-top:1rem">
+    {{range .Rules}}
+    <article class="rule-card sev-{{if .Severity}}{{.Severity}}{{else}}unset{{end}}{{if and $.SelectedService $.SelectedResource}}{{if and (eq .Service $.SelectedService) (eq .Resource $.SelectedResource)}} match{{end}}{{end}}{{if and $.SelectedService (not $.SelectedResource)}}{{if eq .Service $.SelectedService}} match{{end}}{{end}}">
+      <header class="rule-card-top">
+        <div>
+          <div class="rule-service mono">{{.Service}} / {{.Resource}}</div>
+          <h3 class="rule-name">{{.Name}}</h3>
+        </div>
+        <button type="button" class="icon-btn"
+                title="Remove rule"
+                hx-post="/policies/rules/{{.Index}}/delete"
+                hx-vals='{"nav_service":"{{$.SelectedService}}","nav_resource":"{{$.SelectedResource}}"}'
+                hx-target="#studio-swap"
+                hx-swap="innerHTML"
+                hx-confirm="Remove rule {{.Name}}?">×</button>
+      </header>
+      {{if .Description}}<p class="rule-desc">{{.Description}}</p>{{end}}
+      <div class="chip-row">
+        {{if .Severity}}<span class="chip sev">{{.Severity}}</span>{{end}}
+        {{if .Category}}<span class="chip">{{.Category}}</span>{{end}}
+        <span class="chip action">{{.Action}}</span>
+        {{if .GuideRef}}<span class="chip mono">{{.GuideRef}}</span>{{end}}
+      </div>
+      <div class="check-box">
+        <div class="check-label">checks</div>
+        <div class="chip-row">
+          {{range .Checks}}
+          <span class="chip check"><span class="k">{{.Key}}</span> {{.Value}}</span>
+          {{else}}
+          <span class="muted">No checks</span>
+          {{end}}
+        </div>
+      </div>
+    </article>
+    {{else}}
+    <p class="muted">No rules yet — pick a type and add one.</p>
+    {{end}}
+  </div>
+</section>
+
+{{if .Composites}}
+<section class="panel">
+  <h2>Composite cards <span class="muted" style="font-weight:400">{{len .Composites}}</span></h2>
+  <div class="rule-grid" style="margin-top:1rem">
+    {{range .Composites}}
+    <article class="rule-card composite">
+      <header class="rule-card-top">
+        <div>
+          <div class="rule-service mono">{{.Service}} · composite</div>
+          <h3 class="rule-name">{{.Name}}</h3>
+        </div>
+      </header>
+      {{if .Description}}<p class="rule-desc">{{.Description}}</p>{{end}}
+      <div class="chip-row">
+        {{if .Severity}}<span class="chip sev">{{.Severity}}</span>{{end}}
+        {{if .Category}}<span class="chip">{{.Category}}</span>{{end}}
+        <span class="chip action">{{.Action}}</span>
+        {{if .Pattern}}<span class="chip check"><span class="k">pattern</span> {{.Pattern}}</span>{{end}}
+      </div>
+      <div class="check-box">
+        <div class="check-label">resources</div>
+        <div class="mono">{{.Resources}}</div>
+      </div>
+    </article>
+    {{end}}
+  </div>
+</section>
+{{end}}
+{{end}}

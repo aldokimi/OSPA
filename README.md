@@ -9,13 +9,14 @@ A policy-driven audit and remediation agent for OpenStack clouds.
 - **Declarative policies** - Write audit rules in simple YAML
 - **Multi-service support** - Audit resources across OpenStack services
 - **Safe by default** - Read-only mode unless explicitly enabled
+- **Web UI** - HTMX dashboard, Policy Studio, and cloud profiles (`cmd/server`)
 - **Extensible** - Add new services and resources with scaffolding tools
 - **Concurrent** - Parallel discovery and audit for large clouds
 
 ## Quick Start
 
 ```bash
-# Set up credentials
+# Set up credentials (CLI)
 export OS_CLIENT_CONFIG_FILE=path/to/clouds.yaml
 
 # Audit only (safe, no changes)
@@ -23,6 +24,9 @@ go run ./cmd/agent --cloud mycloud --policy ./examples/policies.yaml --out findi
 
 # Apply remediation (with --fix flag)
 go run ./cmd/agent --cloud mycloud --policy ./examples/policies.yaml --out findings.json --fix
+
+# Or use the Web UI (connect a profile in the browser — no auto local cloud)
+go run ./cmd/server --listen :8080
 ```
 
 ## Supported Services
@@ -78,6 +82,7 @@ policies:
 
 - [Getting Started](https://openstack-policy-agent.github.io/OSPA/getting-started/)
 - [User Guide](https://openstack-policy-agent.github.io/OSPA/user-guide/)
+- [Web UI](https://openstack-policy-agent.github.io/OSPA/user-guide/web-ui/)
 - [Developer Guide](https://openstack-policy-agent.github.io/OSPA/developer-guide/)
 - [Reference](https://openstack-policy-agent.github.io/OSPA/reference/)
 
