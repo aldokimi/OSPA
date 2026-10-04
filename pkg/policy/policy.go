@@ -133,7 +133,8 @@ type CheckConditions struct {
 
 	// --- Swift checks ---
 
-	QuotaSet *bool `yaml:"quota_set,omitempty"`
+	QuotaSet    *bool `yaml:"quota_set,omitempty"`
+	PublicWrite *bool `yaml:"public_write,omitempty"`
 
 	// --- Barbican checks ---
 
@@ -244,6 +245,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.QuotaSet != nil {
 		used = append(used, "quota_set")
+	}
+	if c.PublicWrite != nil {
+		used = append(used, "public_write")
 	}
 	if c.SecretType != "" {
 		used = append(used, "secret_type")

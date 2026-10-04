@@ -101,10 +101,9 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 ### 7. Swift (`swift` / object-store) — Live (hygiene)
 
 - **Supported Resources:** `account`, `container`, `object`
-- **Existing Checks (implemented):** as declared (account `quota_set` log-only; container unused/exempt; object age/exempt)
+- **Existing Checks (implemented):** account `quota_set`; container `unused/exempt_names/is_public/public_write`; object `age_gt/exempt_names`
 - **Gaps / enhancements (verified):**
-  - **REAL in OSPA model; SDK-capable:** container ACL headers (`Read`/`Write`) exist via container Get — not modeled because discovery/audit currently list-oriented.
-  - **REAL until exposure fields exist:** composite like public container + old object.
+  - **DONE (#115):** container ACL modeled via Get; composite `public_container_aged_object`.
 
 ### 8. Octavia (`octavia` / load-balancer) — Stub
 
