@@ -96,7 +96,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Existing Checks (implemented):** hygiene as declared; **`unused` correctly omitted** (no API in-use signal)
 - **Gaps / enhancements (verified):**
   - **DONE (#104/#114):** `failed_stack_root_cause` Heat `CompositeAuditor` joins failed stacks with failed sub-resources via `StackName` + status reasons.
-  - **REAL (API limitation):** orphaned-component cleanup cannot use `unused`; use status/age/dependency-aware alternatives instead (#118).
+  - **DONE (#118):** orphaned cleanup documented without inventing `unused` — status/age/stack-delete patterns in Heat policy guide.
 
 ### 7. Swift (`swift` / object-store) — Live (hygiene)
 
