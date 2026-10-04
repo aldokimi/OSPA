@@ -88,7 +88,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - `project` / `domain` / `service`: common as declared
 - **Gaps / enhancements (verified):**
   - **REAL:** finish `has_admin_role` evaluation, then register `high_privilege_no_mfa` composite.
-  - **PARTIAL:** `password_expired` + `mfa_enabled` fields both work; can AND in one user rule today — still missing a named composite outcome.
+  - **DONE (#111):** `expired_password_no_mfa` observation when `password_expired` and `mfa_enabled` both fire.
   - **REAL:** MFA/posture for service users/groups at scale and admin-role inheritance need relationship model inputs.
 
 ### 6. Heat (`heat` / orchestration) — Live
@@ -221,7 +221,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Ingress + egress wide-open | `bidirectional_world_exposure` | REAL — needs peer-rule / composite eval |
 | Shared scope + exposure rules | `shared_network_world_exposure` | REAL — needs membership correlation |
 | Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
-| Password expired + no MFA | `expired_password_no_mfa` | PARTIAL — AND-able today |
+| Password expired + no MFA | `expired_password_no_mfa` | DONE (#111) |
 | Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | PARTIAL — volume AND-able; snapshot/backup crypto incomplete |
 | Idle instance + no keypair | `idle_no_keypair` | PARTIAL — AND-able today |
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |

@@ -2,6 +2,7 @@ package keystone
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,6 +111,36 @@ func TestUserAuditor_Check_MFAEnabled_StringOptionSatisfied(t *testing.T) {
 	}
 	if !result.Compliant {
 		t.Error("Check() expected compliant for user with MFA when MFA is required")
+	}
+}
+
+func TestUserAuditor_Check_ExpiredPasswordNoMFA(t *testing.T) {
+	auditor := &UserAuditor{}
+	u := users.User{
+		ID:                "user-123",
+		Name:              "jdoe",
+		PasswordExpiresAt: time.Now().Add(-24 * time.Hour),
+		Options:           map[string]interface{}{"multi_factor_auth_enabled": "false"},
+	}
+
+	wantMFA := true
+	rule := &policy.Rule{
+		Name: "expired-no-mfa",
+		Check: policy.CheckConditions{
+			PasswordExpired: true,
+			MFAEnabled:      &wantMFA,
+		},
+	}
+
+	result, err := auditor.Check(context.Background(), u, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for expired password without MFA")
+	}
+	if !strings.Contains(result.Observation, "expired_password_no_mfa") {
+		t.Fatalf("expected expired_password_no_mfa observation, got %q", result.Observation)
 	}
 }
 
