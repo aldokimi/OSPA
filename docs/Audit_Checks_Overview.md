@@ -75,7 +75,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - `image`: `visibility` + common
   - `member`: common only (`unused` ≈ pending acceptance)
 - **Gaps / enhancements (verified):**
-  - **REAL (composite):** correlate `image.visibility` with member scope (`ImageID`/`MemberID` already on member) → candidate `public_image_cross_tenant_exposure`.
+  - **DONE (#113):** `public_image_cross_tenant_exposure` Glance `CompositeAuditor` (public/shared images + member scope).
   - **PARTIAL:** “public image + sensitive tags” needs tag fields in `CheckConditions` (not modeled today).
 
 ### 5. Keystone (`keystone` / identity) — Live
@@ -224,7 +224,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | DONE (#110) at volume level; snapshot/backup crypto still incomplete |
 | Idle instance + no keypair | `idle_no_keypair` | DONE (#108) |
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
-| Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
+| Public image + access scope | `public_image_cross_tenant_exposure` | DONE (#113) |
 | Failed stack + failed sub-resources | `failed_stack_root_cause` | DONE (#104/#114) |
 | DNS risky record exposure | `risky_dns_exposure` | DONE (#101) for record_type A/AAAA; zone composites still open |
 

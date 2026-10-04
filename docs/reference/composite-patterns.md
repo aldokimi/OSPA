@@ -17,7 +17,7 @@ outcomes) into high-signal compliance findings.
 | `stale_secret_material` | barbican | secret `age_gt` (+ `secret_type`) | Atomic observation (#100) |
 | `risky_dns_exposure` | designate | recordset `record_type` | Atomic observation (#101) |
 | `failed_stack_root_cause` | heat | stack + resource linkage (`StackName`, status reasons) | **Registered** (#104/#114) |
-| `public_image_cross_tenant_exposure` | glance | image + member | Open (#113) |
+| `public_image_cross_tenant_exposure` | glance | image + member | **Registered** (#113) |
 
 ## AND-in-one-rule vs true composites
 
