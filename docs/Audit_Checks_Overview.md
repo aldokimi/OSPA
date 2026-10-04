@@ -51,7 +51,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - `hypervisor`: `status`, `exempt_names`
 - **Gaps / enhancements (verified):**
   - **PARTIAL:** “public flavor + instance on public/shared networks” is not a registered composite. Nova server objects already expose `Addresses` / flavor binding; joining to Neutron `shared`/`external` is the missing audit-model step (not “impossible”).
-  - **PARTIAL:** idle/`unused` + `no_keypair` can already AND in one instance rule; still missing a named prioritization composite in the catalog.
+  - **DONE (#108):** `idle_no_keypair` observation when `unused` (SHUTOFF) and `no_keypair` both fire.
   - **REAL (config-plane):** TLS/auth between services remains manual OSG territory.
 
 ### 3. Cinder (`volumev3` / block storage) — Live (with snapshot mismatch)
@@ -223,7 +223,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
 | Password expired + no MFA | `expired_password_no_mfa` | DONE (#111) |
 | Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | PARTIAL — volume AND-able; snapshot/backup crypto incomplete |
-| Idle instance + no keypair | `idle_no_keypair` | PARTIAL — AND-able today |
+| Idle instance + no keypair | `idle_no_keypair` | DONE (#108) |
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
 | Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
 | Failed stack + failed sub-resources | `failed_stack_root_cause` | PARTIAL — StackName linkage exists; composite not built |
