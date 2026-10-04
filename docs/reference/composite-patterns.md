@@ -10,7 +10,7 @@ outcomes) into high-signal compliance findings.
 | `public_sensitive_service_exposure` | neutron | SG rule fields (atomic) | Atomic observation (#102) |
 | `bidirectional_world_exposure` | neutron | SG rule fields (atomic approx.) | Atomic observation (#102); peer-rule composite TBD |
 | `shared_network_world_exposure` | neutron | `network` + `port` + `security_group_rule` | **Registered** `CompositeAuditor` |
-| `high_privilege_no_mfa` | keystone | live `has_admin_role` + `mfa_enabled` | Blocked on #105 |
+| `high_privilege_no_mfa` | keystone | live `has_admin_role` + `mfa_enabled` | Atomic observation (#105) |
 | `expired_password_no_mfa` | keystone | user atomics | Atomic observation (#111) |
 | `idle_no_keypair` | nova | instance atomics | Atomic observation (#108) |
 | `unencrypted_volume_backup_risk` | cinder | volume atomics | Atomic observation (#110) |
