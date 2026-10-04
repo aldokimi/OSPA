@@ -2,6 +2,7 @@ package nova
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/policy"
@@ -92,6 +93,27 @@ func TestInstanceAuditor_Check_NoKeypair(t *testing.T) {
 	}
 	if result.Compliant {
 		t.Error("Check() expected non-compliant for instance without keypair")
+	}
+}
+
+func TestInstanceAuditor_Check_IdleNoKeypair(t *testing.T) {
+	auditor := &InstanceAuditor{}
+	s := servers.Server{ID: "srv-123", Name: "idle", Status: "SHUTOFF", KeyName: ""}
+
+	rule := &policy.Rule{
+		Name:  "idle-no-keypair",
+		Check: policy.CheckConditions{Unused: true, NoKeypair: true},
+	}
+
+	result, err := auditor.Check(context.Background(), s, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for SHUTOFF instance without keypair")
+	}
+	if !strings.Contains(result.Observation, "idle_no_keypair") {
+		t.Fatalf("expected idle_no_keypair observation, got %q", result.Observation)
 	}
 }
 

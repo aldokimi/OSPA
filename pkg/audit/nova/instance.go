@@ -51,7 +51,9 @@ func (a *InstanceAuditor) Check(ctx context.Context, resource interface{}, rule 
 		return result, err
 	}
 
+	idleHit := false
 	if rule.Check.Unused && s.Status == "SHUTOFF" {
+		idleHit = true
 		result.Compliant = false
 		result.Observation = "instance is stopped but still allocated (SHUTOFF)"
 	}
@@ -67,9 +69,16 @@ func (a *InstanceAuditor) Check(ctx context.Context, resource interface{}, rule 
 		}
 	}
 
+	noKeyHit := false
 	if rule.Check.NoKeypair && s.KeyName == "" {
+		noKeyHit = true
 		result.Compliant = false
 		result.Observation = "instance has no SSH keypair attached"
+	}
+
+	// #108 catalog outcome: idle/SHUTOFF + missing keypair.
+	if idleHit && noKeyHit {
+		result.Observation = "idle_no_keypair: instance is SHUTOFF and has no SSH keypair attached"
 	}
 
 	return result, nil
