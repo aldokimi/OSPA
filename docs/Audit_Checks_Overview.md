@@ -149,17 +149,17 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
   - **REAL:** template/policy-level security configuration checks missing.
   - **REAL (audit-model truncation):** discovery currently keeps ID/Name/timestamps for templates — API has richer fields that are dropped before audit. Restore those fields before writing security checks.
 
-### 13. Ironic (`ironic` / baremetal) — Live (guide drift)
+### 13. Ironic (`ironic` / baremetal) — Live
 
 - **Supported Resources:** `node`, `port`, `driver`, `chassis`
-- **Existing Checks (implemented — differs from guide):**
-  - `node`: `status`, `age_gt`, `unused`, `exempt_names`
+- **Existing Checks (implemented):**
+  - `node`: `status`, `age_gt`, `unused`, `exempt_names`, `console_enabled`, `boot_interface` (#112)
   - `port`: `age_gt`, `exempt_names` only
   - `driver`: `exempt_names` only
   - `chassis`: `age_gt`, `exempt_names` only
 - **Gaps / enhancements (verified):**
-  - **REAL (doc drift):** policy guide claims status/unused for port/driver/chassis; validators/auditors do not — align docs.
-  - **REAL:** provisioning-time insecure parameters (PXE/TLS/driver settings) not modeled; add if Ironic audit payloads expose them.
+  - **DONE (#112):** guide aligned with validators/auditors; node provisioning posture via `console_enabled` / `boot_interface` (SDK fields).
+  - **PARTIAL:** per-driver `driver_info` secret/TLS keys remain unstructured maps — not first-class checks.
 
 ### 14. Designate (`designate` / dns) — Live
 

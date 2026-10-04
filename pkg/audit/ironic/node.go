@@ -3,6 +3,7 @@ package ironic
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OpenStack-Policy-Agent/OSPA/pkg/audit"
@@ -23,7 +24,7 @@ func (a nodeAdapter) GetUpdatedAt() time.Time { return a.n.UpdatedAt }
 
 // NodeAuditor audits ironic/node resources.
 //
-// Allowed checks: status, age_gt, unused, exempt_names
+// Allowed checks: status, age_gt, unused, exempt_names, console_enabled, boot_interface
 // Allowed actions: log, delete, tag
 type NodeAuditor struct{}
 
@@ -32,7 +33,7 @@ func (a *NodeAuditor) ResourceType() string {
 }
 
 func (a *NodeAuditor) ImplementedChecks() []string {
-	return []string{"status", "age_gt", "unused", "exempt_names"}
+	return []string{"status", "age_gt", "unused", "exempt_names", "console_enabled", "boot_interface"}
 }
 
 func (a *NodeAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
@@ -54,6 +55,20 @@ func (a *NodeAuditor) Check(ctx context.Context, resource interface{}, rule *pol
 	if rule.Check.Unused && n.InstanceUUID == "" {
 		result.Compliant = false
 		result.Observation = "node has no instance deployed"
+	}
+
+	// console_enabled: true means "require console disabled" style — flag when
+	// actual value differs from the desired policy value (same pattern as MFA).
+	if rule.Check.ConsoleEnabled != nil && n.ConsoleEnabled != *rule.Check.ConsoleEnabled {
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("node console_enabled is %t", n.ConsoleEnabled)
+	}
+
+	// boot_interface: flag nodes whose boot interface equals the policy value
+	// (e.g. boot_interface: pxe to find legacy PXE provisioning).
+	if rule.Check.BootInterface != "" && strings.EqualFold(n.BootInterface, rule.Check.BootInterface) {
+		result.Compliant = false
+		result.Observation = fmt.Sprintf("node boot_interface=%s", n.BootInterface)
 	}
 
 	return result, nil

@@ -51,6 +51,41 @@ func TestNodeAuditor_Check_Unused(t *testing.T) {
 	}
 }
 
+func TestNodeAuditor_Check_ConsoleEnabled(t *testing.T) {
+	auditor := &NodeAuditor{}
+	n := nodes.Node{UUID: "node-123", Name: "compute-01", ConsoleEnabled: true}
+	want := false // require console disabled
+	rule := &policy.Rule{
+		Name:  "no-console",
+		Check: policy.CheckConditions{ConsoleEnabled: &want},
+	}
+
+	result, err := auditor.Check(context.Background(), n, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant when console enabled but policy wants false")
+	}
+}
+
+func TestNodeAuditor_Check_BootInterfacePXE(t *testing.T) {
+	auditor := &NodeAuditor{}
+	n := nodes.Node{UUID: "node-123", Name: "compute-01", BootInterface: "pxe"}
+	rule := &policy.Rule{
+		Name:  "find-pxe",
+		Check: policy.CheckConditions{BootInterface: "pxe"},
+	}
+
+	result, err := auditor.Check(context.Background(), n, rule)
+	if err != nil {
+		t.Fatalf("Check() error = %v", err)
+	}
+	if result.Compliant {
+		t.Fatal("expected non-compliant for pxe boot interface")
+	}
+}
+
 func TestNodeAuditor_Check_ExemptName(t *testing.T) {
 	auditor := &NodeAuditor{}
 	n := nodes.Node{UUID: "node-123", Name: "default", ProvisionState: "error"}

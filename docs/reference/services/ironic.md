@@ -16,7 +16,16 @@ This guide explains how to write policies for Ironic resources in OSPA.
 **Resource Type:** `node`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** status, age_gt, unused, exempt_names, console_enabled, boot_interface
+
+#### Security & Domain Checks
+
+| Check | Severity | Category | Type | Description |
+|-------|----------|----------|------|-------------|
+| **`console_enabled`** | high | security | bool | Match `ConsoleEnabled` (e.g. `true` to require/find enabled serial console) |
+| **`boot_interface`** | high | security | string | Match boot interface (e.g. `pxe` for legacy PXE provisioning) |
+
+Driver_info secrets / TLS material inside `driver_info` are not modeled as first-class checks (map values vary by driver) — treat detailed credential scraping as an API-audit model caution.
 
 
 ### Port
@@ -24,7 +33,7 @@ This guide explains how to write policies for Ironic resources in OSPA.
 **Resource Type:** `port`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** age_gt, exempt_names
 
 
 ### Driver
@@ -32,7 +41,7 @@ This guide explains how to write policies for Ironic resources in OSPA.
 **Resource Type:** `driver`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** exempt_names
 
 
 ### Chassis
@@ -40,7 +49,7 @@ This guide explains how to write policies for Ironic resources in OSPA.
 **Resource Type:** `chassis`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** age_gt, exempt_names
 
 
 
