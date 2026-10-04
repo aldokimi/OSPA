@@ -104,14 +104,13 @@ policies:
 
 	resourceResults.LogSummary(t)
 
-	// Verify the resource was discovered
+	// Verify the resource was discovered and flagged as unused.
 	if resourceResults.Scanned == 0 {
-		t.Error("Expected security group to be scanned but it wasn't discovered")
+		t.Fatal("Expected security group to be scanned but it wasn't discovered")
 	}
-
-	// Security group is not attached to any ports, so it should be flagged
-	// Note: The current implementation marks unused for later evaluation
-	t.Log("Security group discovered for unused check - verify manually if flagged correctly")
+	if resourceResults.Violations == 0 {
+		t.Fatal("Expected unused security group (not on any port) to be a violation")
+	}
 }
 
 // TestNeutron_SecurityGroup_ExemptNames verifies name exemptions work.

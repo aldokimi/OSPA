@@ -38,8 +38,6 @@ func (a *SecurityGroupAuditor) ImplementedChecks() []string {
 }
 
 func (a *SecurityGroupAuditor) Check(ctx context.Context, resource interface{}, rule *policy.Rule) (*audit.Result, error) {
-	_ = ctx
-
 	sg, ok := resource.(groups.SecGroup)
 	if !ok {
 		return nil, fmt.Errorf("expected groups.SecGroup, got %T", resource)
@@ -54,7 +52,25 @@ func (a *SecurityGroupAuditor) Check(ctx context.Context, resource interface{}, 
 	}
 
 	if rule.Check.Unused {
-		result.Observation = "unused check pending - requires port enumeration"
+		raw, ok := audit.ClientFromContext(ctx)
+		if !ok {
+			result.Observation = "unused check pending - requires port enumeration"
+			return result, nil
+		}
+		client, ok := raw.(*gophercloud.ServiceClient)
+		if !ok {
+			result.Observation = fmt.Sprintf("unused check failed: expected *gophercloud.ServiceClient, got %T", raw)
+			return result, nil
+		}
+		unused, err := a.CheckUnused(ctx, client, sg)
+		if err != nil {
+			result.Observation = fmt.Sprintf("unused check failed: %v", err)
+			return result, nil
+		}
+		if unused {
+			result.Compliant = false
+			result.Observation = "security group is not attached to any ports"
+		}
 	}
 
 	return result, nil

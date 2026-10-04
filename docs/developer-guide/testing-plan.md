@@ -14,8 +14,9 @@ Goal: prove OSPA works correctly across CLI, Web UI, policies, and every live Op
 | **G6 CLI smoke** | Dry-run agent against sample policy produces findings JSON/CSV without panic |
 | **G7 UI smoke** | Server starts; Profiles connect/disconnect; dashboard refresh; Policy Studio validate; dry-run from UI |
 | **G8 Docs** | mkdocs build succeeds; CLI/UI commands in docs match flags |
+| **G9 DevStack manage** | Create real resources on local DevStack, audit with OSPA policy, apply remediation, re-audit — see §3.7 |
 
-Release rule: **G1–G3 + G6 + G7 required**. **G4–G5 required** when OpenStack credentials are available (nightly / pre-release).
+Release rule: **G1–G3 + G6 + G7 required**. **G4–G5 + G9 required** when OpenStack/DevStack credentials are available (nightly / pre-release).
 
 ---
 
@@ -171,6 +172,41 @@ go run ./cmd/scaffold --list
 
 Ensure new services get auditor + discovery + validator + e2e stubs that compile under `-tags=e2e`.
 
+### 3.7 DevStack create → policy → manage (G9)
+
+End-to-end proof that OSPA can **manage** resources it discovers on a local DevStack:
+
+1. **Create** fixtures (unused security group, SSH-open-to-world rule, public Glance image, Nova keypair)
+2. **Audit** with `examples/policies/devstack-manage.yaml` (dry-run) — expect violations
+3. **Apply** remediation (`delete` on unused SG, allow-listed)
+4. **Re-audit** — deleted SG gone; remaining violations still reported
+5. **CLI** dry-run of the same policy file via `cmd/agent` (exit `2` with findings is OK)
+
+```bash
+export OS_CLOUD=devstack
+make test-devstack-manage
+# or:
+./scripts/devstack-manage-test.sh
+# Go-only:
+go test -tags=e2e ./e2e/scenario/... -count=1 -timeout 30m -v
+```
+
+| Artifact | Role |
+|----------|------|
+| `examples/policies/devstack-manage.yaml` | Policy under test |
+| `e2e/scenario/devstack_manage_test.go` | Create / audit / apply / re-audit assertions |
+| `scripts/devstack-manage-test.sh` | Orchestrates Go scenario + CLI agent |
+
+**Pass criteria**
+
+- SSH world-open rule flagged by `manage-ssh-open-to-world`
+- Unused SG flagged then **deleted** on apply
+- Public image flagged by `manage-public-image`
+- Keypair discovered under nova policy
+- Script exits 0; CLI writes a non-empty findings file
+
+**On failure:** fix auditor/discovery/policy/creator, re-run `make test-devstack-manage`, then commit/PR/merge — do not weaken assertions without documenting an API-audit limitation.
+
 ---
 
 ## 4. CI / automation plan
@@ -210,6 +246,7 @@ Copy into the release PR:
 - [ ] G1–G3 green on `main`
 - [ ] E2E core (neutron, glance, keystone, nova) green on target cloud
 - [ ] Full `e2e/...` green (skips OK for absent services)
+- [ ] **G9** `make test-devstack-manage` green on local DevStack
 - [ ] CLI dry-run + sample policy
 - [ ] UI profile connect (remote **and** local consent path)
 - [ ] Policy Studio create/validate/save
@@ -251,6 +288,9 @@ OS_CLOUD=devstack go test -tags=e2e ./e2e/neutron/... ./e2e/glance/... ./e2e/key
 
 # Full e2e
 OS_CLOUD=devstack make test-e2e
+
+# Create resources on DevStack and manage them with OSPA policies
+OS_CLOUD=devstack make test-devstack-manage
 
 # UI
 make server

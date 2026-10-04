@@ -1,13 +1,14 @@
-.PHONY: scaffold help build server test test-e2e
+.PHONY: scaffold help build server test test-e2e test-devstack-manage
 
 help:
 	@echo "OSPA Makefile"
 	@echo ""
 	@echo "Targets:"
-	@echo "  scaffold    - Run the scaffold tool (use: make scaffold SERVICE=glance RESOURCES=image,member)"
-	@echo "  build       - Build the agent"
-	@echo "  test        - Run tests"
-	@echo "  test-e2e    - Run e2e tests"
+	@echo "  scaffold              - Run the scaffold tool (use: make scaffold SERVICE=glance RESOURCES=image,member)"
+	@echo "  build                 - Build the agent and UI server"
+	@echo "  test                  - Run unit tests"
+	@echo "  test-e2e              - Run e2e tests (needs OS_CLOUD for live runs)"
+	@echo "  test-devstack-manage  - Create DevStack resources and manage them via OSPA policy"
 
 scaffold:
 	@if [ -z "$(SERVICE)" ]; then \
@@ -34,4 +35,8 @@ test:
 
 test-e2e:
 	go test -tags=e2e ./e2e/...
+
+test-devstack-manage:
+	@test -n "$$OS_CLOUD" || { echo "OS_CLOUD is required (e.g. export OS_CLOUD=devstack)"; exit 1; }
+	./scripts/devstack-manage-test.sh
 
