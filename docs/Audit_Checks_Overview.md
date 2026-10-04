@@ -65,7 +65,7 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 - **Gaps / enhancements (verified):**
   - **REAL:** backup retention window / compliance / backup↔volume matching beyond boolean `has_backup`.
   - **REAL:** QoS posture fields not modeled (only `exempt_names`).
-  - **PARTIAL:** volume-level `encrypted=false` + `has_backup` can AND in one rule today. Richer “insufficient crypto controls” narrative still needs snapshot/backup encryption state (API-audit model gap for those resources).
+  - **DONE (#110):** `unencrypted_volume_backup_risk` when `encrypted` + `has_backup` atomics both fire (volume-level).
   - **REAL (doc/code drift):** align guide + validator + auditor on snapshot `encrypted` (implement via source-volume join, or remove from guide).
 
 ### 4. Glance (`glance` / image) — Live
@@ -222,7 +222,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Shared scope + exposure rules | `shared_network_world_exposure` | REAL — needs membership correlation |
 | Admin + no MFA | `high_privilege_no_mfa` | REAL — blocked on live `has_admin_role` |
 | Password expired + no MFA | `expired_password_no_mfa` | DONE (#111) |
-| Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | PARTIAL — volume AND-able; snapshot/backup crypto incomplete |
+| Unencrypted volume + backup posture | `unencrypted_volume_backup_risk` | DONE (#110) at volume level; snapshot/backup crypto still incomplete |
 | Idle instance + no keypair | `idle_no_keypair` | DONE (#108) |
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
 | Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
