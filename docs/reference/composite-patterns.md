@@ -13,6 +13,7 @@ outcomes) into high-signal compliance findings.
 | `high_privilege_no_mfa` | keystone | live `has_admin_role` + `mfa_enabled` | Atomic observation (#105) |
 | `expired_password_no_mfa` | keystone | user atomics | Atomic observation (#111) |
 | `idle_no_keypair` | nova | instance atomics | Atomic observation (#108) |
+| `public_flavor_network_binding` | nova | flavor + instance (`Addresses`) | **Registered** (#106); Neutron shared join TBD |
 | `unencrypted_volume_backup_risk` | cinder | volume atomics | Atomic observation (#110) |
 | `stale_secret_material` | barbican | secret `age_gt` (+ `secret_type`) | Atomic observation (#100) |
 | `risky_dns_exposure` | designate | recordset `record_type` | Atomic observation (#101) |
