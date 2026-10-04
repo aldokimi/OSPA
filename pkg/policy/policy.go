@@ -135,6 +135,11 @@ type CheckConditions struct {
 
 	// SecretType matches Barbican secret_type (e.g. passphrase, private, certificate, opaque).
 	SecretType string `yaml:"secret_type,omitempty"`
+
+	// --- Designate checks ---
+
+	// RecordType matches DNS recordset type (A, AAAA, TXT, MX, CNAME, …).
+	RecordType string `yaml:"record_type,omitempty"`
 }
 
 // UsedChecks returns the YAML field names of all non-zero check conditions.
@@ -225,6 +230,9 @@ func (c *CheckConditions) UsedChecks() []string {
 	}
 	if c.SecretType != "" {
 		used = append(used, "secret_type")
+	}
+	if c.RecordType != "" {
+		used = append(used, "record_type")
 	}
 	return used
 }

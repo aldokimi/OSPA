@@ -24,7 +24,13 @@ This guide explains how to write policies for Designate resources in OSPA.
 **Resource Type:** `recordset`
 
 **Allowed Actions:** log, delete, tag
-**Allowed Checks:** status, age_gt, unused, exempt_names
+**Allowed Checks:** status, age_gt, unused, exempt_names, record_type
+
+#### Security & Domain Checks
+
+| Check | Severity | Category | Type | Description |
+|-------|----------|----------|------|-------------|
+| **`record_type`** | high | security | string | Match DNS recordset `Type` (A, AAAA, TXT, …). A/AAAA matches emit `risky_dns_exposure` observations (SDK already exposes `Type` + `Records`). |
 
 
 ### Record

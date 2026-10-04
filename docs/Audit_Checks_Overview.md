@@ -165,26 +165,26 @@ OSPA (OpenStack Policy Agent) is designed to conduct policy-driven audits and re
 ### 14. Designate (`designate` / dns) — Live
 
 - **Supported Resources:** `zone`, `recordset`, `record`
-- **Existing Checks (implemented):** hygiene as declared; recordset `unused` already uses `len(Records)==0`
+- **Existing Checks (implemented):** hygiene as declared; recordset `unused` already uses `len(Records)==0`; **`record_type`** (#101) with `risky_dns_exposure` for A/AAAA
 - **Gaps / enhancements (verified):**
-  - **PARTIAL (overstated previously):** recordset SDK already has `Type` + `Records`. DNS exposure / risky record-type checks are **implementable** once added to guide + `CheckConditions` — not blocked on API unavailability.
-  - Candidate: A/AAAA pointing at public IPs + zone exposure composites.
+  - **DONE (#101):** `record_type` atomic check using SDK `Type`/`Records`.
+  - **PARTIAL:** zone-level exposure composites (public zone + risky records) still need cross-resource correlation (#103).
 
 ### 15. Senlin (`senlin` / clustering) — Stub
 
 - **Supported Resources:** `cluster`, `profile`, `node`, `policy`
-- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Existing Checks:** declared hygiene; **auditors are stubs** (empty `Check()`)
 - **Gaps / enhancements (verified):**
-  - **REAL (blocked by stubs first):** wire live discovery + hygiene.
-  - **REAL:** policy-composition security needs profile/policy definition fields, not just lifecycle metadata.
+  - **REAL (blocked by stubs first):** wire live discovery + hygiene before semantic work.
+  - **REAL (API-audit model after live):** policy-composition security needs profile/policy **definition** fields, not just lifecycle metadata. Do not invent checks from age/status alone.
 
 ### 16. Zaqar (`zaqar` / messaging) — Stub
 
 - **Supported Resources:** `queue`, `message`, `subscription`
-- **Existing Checks:** declared hygiene; **auditors are stubs**
+- **Existing Checks:** declared hygiene; **auditors are stubs** (empty `Check()`)
 - **Gaps / enhancements (verified):**
   - **REAL (blocked by stubs first):** wire live discovery + hygiene.
-  - **REAL (cautious):** payload/content risk checks need sanitized metadata (content-type etc.); do not require raw payload inspection.
+  - **REAL (cautious / availability):** payload/content risk only via sanitized metadata (e.g. content-type). Raw message body inspection is out of scope.
 
 
 ## Scaffolding Insights
@@ -227,7 +227,7 @@ The scaffolding tool provided within OSPA enables the generation of template che
 | Rotation freshness risk | `stale_secret_material` | PARTIAL — type/age SDK-capable; rotation/usage not |
 | Public image + access scope | `public_image_cross_tenant_exposure` | REAL — member linkage exists; composite not registered |
 | Failed stack + failed sub-resources | `failed_stack_root_cause` | PARTIAL — StackName linkage exists; composite not built |
-| DNS risky record exposure | `risky_dns_exposure` | PARTIAL — Type/Records available; not in guide |
+| DNS risky record exposure | `risky_dns_exposure` | DONE (#101) for record_type A/AAAA; zone composites still open |
 
 ## Recommendations
 1. Adopt the gap philosophy: missing checks are gaps only when the audit-model/SDK supports them; otherwise label **API-audit model availability**. Prefer “OSPA truncates SDK field X” when that is the real blocker.
